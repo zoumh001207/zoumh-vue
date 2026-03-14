@@ -51,3 +51,10 @@ export function getHotelMonitorHistory(monitorId) {
     method: 'get'
   })
 }
+
+export function crawlHotelMonitor(monitorId) {
+  return request({
+    url: `/hotel/monitor/${monitorId}/crawl`,
+    method: 'post'
+  })
+}

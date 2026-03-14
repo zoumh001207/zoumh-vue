@@ -10,6 +10,13 @@
       </el-col>
     </el-row>
 
+    <el-alert
+      title="这不是手工价格台账。每个任务会按照链接和抓取配置自动请求酒店详情页，提取价格并写入历史。"
+      type="info"
+      :closable="false"
+      show-icon
+    />
+
     <el-form ref="queryRef" :model="queryParams" :inline="true" v-show="showSearch" label-width="80px">
       <el-form-item label="酒店名称" prop="hotelName">
         <el-input v-model="queryParams.hotelName" placeholder="请输入酒店名称" clearable style="width: 220px" @keyup.enter="handleQuery" />
@@ -18,9 +25,6 @@
         <el-select v-model="queryParams.platform" placeholder="请选择平台" clearable style="width: 180px">
           <el-option v-for="item in platformOptions" :key="item" :label="item" :value="item" />
         </el-select>
-      </el-form-item>
-      <el-form-item label="城市" prop="city">
-        <el-input v-model="queryParams.city" placeholder="请输入城市" clearable style="width: 180px" @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 160px">
@@ -35,13 +39,13 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['hotel:monitor:add']">新增</el-button>
+        <el-button type="primary" plain icon="Plus" @click="handleAdd" v-hasPermi="['hotel:monitor:add']">新增任务</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['hotel:monitor:edit']">修改</el-button>
+        <el-button type="success" plain icon="Edit" :disabled="single" @click="handleUpdate" v-hasPermi="['hotel:monitor:edit']">修改任务</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['hotel:monitor:remove']">删除</el-button>
+        <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['hotel:monitor:remove']">删除任务</el-button>
       </el-col>
       <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
     </el-row>
@@ -49,12 +53,10 @@
     <el-table v-loading="loading" :data="monitorList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="酒店" align="center" prop="hotelName" min-width="160" />
-      <el-table-column label="平台" align="center" prop="platform" width="120" />
-      <el-table-column label="城市" align="center" prop="city" width="120" />
-      <el-table-column label="房型" align="center" prop="roomType" min-width="140" show-overflow-tooltip />
-      <el-table-column label="入住/离店" align="center" min-width="180">
+      <el-table-column label="平台" align="center" prop="platform" width="110" />
+      <el-table-column label="当前价" align="center" width="120">
         <template #default="scope">
-          <span>{{ scope.row.checkInDate }} 至 {{ scope.row.checkOutDate }}</span>
+          <span>{{ formatPrice(scope.row.currentPrice, scope.row.currency) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="目标价" align="center" width="120">
@@ -62,24 +64,28 @@
           <span>{{ formatPrice(scope.row.targetPrice, scope.row.currency) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="当前价" align="center" width="120">
+      <el-table-column label="抓取" align="center" width="100">
         <template #default="scope">
-          <span>{{ formatPrice(scope.row.currentPrice, scope.row.currency) }}</span>
+          <el-tag :type="scope.row.crawlEnabled === 'Y' ? 'success' : 'info'">
+            {{ scope.row.crawlEnabled === 'Y' ? '开启' : '关闭' }}
+          </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="最近波动" align="center" width="120">
-        <template #default="scope">
-          <span :class="changeClass(scope.row.latestChange)">{{ formatChange(scope.row.latestChange, scope.row.currency) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" align="center" width="110">
+      <el-table-column label="状态" align="center" width="100">
         <template #default="scope">
           <el-tag :type="statusTagMap[scope.row.status] || 'info'">{{ statusLabel(scope.row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="最近检查" align="center" prop="lastCheckedTime" width="180" />
-      <el-table-column label="操作" align="center" width="220" class-name="small-padding fixed-width">
+      <el-table-column label="最近采集" align="center" prop="lastCrawledAt" width="170" />
+      <el-table-column label="最近检查" align="center" prop="lastCheckedTime" width="170" />
+      <el-table-column label="错误信息" align="center" min-width="220" show-overflow-tooltip>
         <template #default="scope">
+          <span class="error-text">{{ scope.row.lastErrorMessage || '--' }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="300" class-name="small-padding fixed-width">
+        <template #default="scope">
+          <el-button link type="primary" icon="Refresh" @click="handleCrawl(scope.row)" v-hasPermi="['hotel:monitor:query']">立即抓取</el-button>
           <el-button link type="primary" icon="Histogram" @click="handleViewHistory(scope.row)" v-hasPermi="['hotel:monitor:query']">价格记录</el-button>
           <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hotel:monitor:edit']">修改</el-button>
           <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hotel:monitor:remove']">删除</el-button>
@@ -95,8 +101,8 @@
       @pagination="getList"
     />
 
-    <el-dialog :title="title" v-model="open" width="680px" append-to-body>
-      <el-form ref="monitorRef" :model="form" :rules="rules" label-width="96px">
+    <el-dialog :title="title" v-model="open" width="760px" append-to-body>
+      <el-form ref="monitorRef" :model="form" :rules="rules" label-width="110px">
         <el-row :gutter="16">
           <el-col :span="12">
             <el-form-item label="酒店名称" prop="hotelName">
@@ -108,16 +114,6 @@
               <el-select v-model="form.platform" placeholder="请选择平台">
                 <el-option v-for="item in platformOptions" :key="item" :label="item" :value="item" />
               </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="城市" prop="city">
-              <el-input v-model="form.city" placeholder="请输入城市" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="房型" prop="roomType">
-              <el-input v-model="form.roomType" placeholder="请输入房型" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -136,36 +132,34 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="当前价格" prop="currentPrice">
-              <el-input-number v-model="form.currentPrice" :precision="2" :min="0" :step="50" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
             <el-form-item label="币种" prop="currency">
               <el-select v-model="form.currency" placeholder="请选择币种">
                 <el-option v-for="item in currencyOptions" :key="item" :label="item" :value="item" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item label="监控状态" prop="status">
-              <el-select v-model="form.status" placeholder="请选择状态">
-                <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
+          <el-col :span="24">
+            <el-form-item label="渠道链接" prop="channelUrl">
+              <el-input v-model="form.channelUrl" placeholder="请输入酒店详情页链接" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="启用抓取" prop="crawlEnabled">
+              <el-radio-group v-model="form.crawlEnabled">
+                <el-radio value="Y">开启</el-radio>
+                <el-radio value="N">关闭</el-radio>
+              </el-radio-group>
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
+            <el-form-item label="抓取策略" prop="crawlStrategy">
+              <el-select v-model="form.crawlStrategy" placeholder="请选择策略">
+                <el-option label="HTML 抓取" value="html" />
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="24">
-            <el-form-item label="渠道链接" prop="channelUrl">
-              <el-input v-model="form.channelUrl" placeholder="请输入详情链接" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="最近检查" prop="lastCheckedTime">
-              <el-date-picker v-model="form.lastCheckedTime" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" placeholder="选择最近检查时间" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="价格提醒" prop="notifyEnabled">
+          <el-col :span="8">
+            <el-form-item label="通知提醒" prop="notifyEnabled">
               <el-radio-group v-model="form.notifyEnabled">
                 <el-radio value="Y">开启</el-radio>
                 <el-radio value="N">关闭</el-radio>
@@ -173,8 +167,18 @@
             </el-form-item>
           </el-col>
           <el-col :span="24">
+            <el-form-item label="抓取配置" prop="crawlConfig">
+              <el-input
+                v-model="form.crawlConfig"
+                type="textarea"
+                :rows="7"
+                placeholder='请输入 JSON，例如 {"priceSelector":".price-number","priceRegex":"(\\d+(?:\\.\\d{1,2})?)","currency":"CNY","source":"ctrip"}'
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
             <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
+              <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="记录抓取规则、酒店别名或反爬注意事项" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -210,6 +214,7 @@
 <script setup name="HotelMonitor">
 import {
   addHotelMonitor,
+  crawlHotelMonitor,
   delHotelMonitor,
   getHotelMonitor,
   getHotelMonitorHistory,
@@ -255,13 +260,13 @@ const statusTagMap = {
   closed: 'info'
 }
 
-const platformOptions = ['美团', '携程', '飞猪', 'Booking', 'Agoda', '同程', '人工录入']
+const platformOptions = ['美团', '携程', '飞猪', 'Booking', 'Agoda', '同程', '去哪儿']
 const currencyOptions = ['CNY', 'HKD', 'USD', 'JPY']
 
 const summaryCards = [
-  { key: 'total', title: '监控总数', desc: '当前已录入任务' },
-  { key: 'tracking', title: '监控中', desc: '持续观察价格波动' },
-  { key: 'alerted', title: '已触达', desc: '当前价格已达到目标' },
+  { key: 'total', title: '监控总数', desc: '当前已配置抓取任务' },
+  { key: 'tracking', title: '监控中', desc: '定时轮询酒店价格' },
+  { key: 'alerted', title: '已触达', desc: '当前价格已经打到目标线' },
   { key: 'targetReached', title: '可下单', desc: '当前价格不高于目标价' }
 ]
 
@@ -271,7 +276,6 @@ const data = reactive({
     pageSize: 10,
     hotelName: undefined,
     platform: undefined,
-    city: undefined,
     status: undefined
   },
   form: {},
@@ -280,7 +284,8 @@ const data = reactive({
     platform: [{ required: true, message: '监控平台不能为空', trigger: 'change' }],
     checkInDate: [{ required: true, message: '入住日期不能为空', trigger: 'change' }],
     checkOutDate: [{ required: true, message: '离店日期不能为空', trigger: 'change' }],
-    targetPrice: [{ required: true, message: '目标价格不能为空', trigger: 'blur' }]
+    targetPrice: [{ required: true, message: '目标价格不能为空', trigger: 'blur' }],
+    channelUrl: [{ required: true, message: '渠道链接不能为空', trigger: 'blur' }]
   }
 })
 
@@ -315,8 +320,10 @@ function reset() {
     currentPrice: undefined,
     currency: 'CNY',
     channelUrl: undefined,
+    crawlEnabled: 'Y',
+    crawlStrategy: 'html',
+    crawlConfig: '{\n  "priceSelector": ".price",\n  "priceRegex": "(\\\\d+(?:\\\\.\\\\d{1,2})?)",\n  "currency": "CNY"\n}',
     status: 'tracking',
-    lastCheckedTime: undefined,
     notifyEnabled: 'Y',
     remark: undefined
   }
@@ -343,7 +350,7 @@ function handleSelectionChange(selection) {
 function handleAdd() {
   reset()
   open.value = true
-  title.value = '新增酒店价格监控'
+  title.value = '新增抓取任务'
 }
 
 function handleUpdate(row) {
@@ -351,14 +358,17 @@ function handleUpdate(row) {
   const monitorId = row?.monitorId || ids.value[0]
   getHotelMonitor(monitorId).then(response => {
     form.value = response.data
+    if (!form.value.crawlConfig) {
+      form.value.crawlConfig = '{\n  "priceSelector": ".price",\n  "priceRegex": "(\\\\d+(?:\\\\.\\\\d{1,2})?)",\n  "currency": "CNY"\n}'
+    }
     open.value = true
-    title.value = '修改酒店价格监控'
+    title.value = '修改抓取任务'
   })
 }
 
 function handleDelete(row) {
   const monitorIds = row?.monitorId ? [row.monitorId] : ids.value
-  proxy.$modal.confirm(`是否确认删除监控编号为 "${monitorIds.join(',')}" 的任务？`).then(() => {
+  proxy.$modal.confirm(`是否确认删除抓取任务 "${monitorIds.join(',')}"？`).then(() => {
     return delHotelMonitor(monitorIds.join(','))
   }).then(() => {
     proxy.$modal.msgSuccess('删除成功')
@@ -374,6 +384,16 @@ function handleViewHistory(row) {
     historyList.value = response.data || []
     historyOpen.value = true
   })
+}
+
+function handleCrawl(row) {
+  proxy.$modal.confirm(`立即抓取 ${row.hotelName} 当前价格？`).then(() => {
+    return crawlHotelMonitor(row.monitorId)
+  }).then(response => {
+    proxy.$modal.msgSuccess(`抓取成功，当前价格 ${formatPrice(response.data.price, response.data.currency)}`)
+    getList()
+    getOverview()
+  }).catch(() => {})
 }
 
 function cancel() {
@@ -475,6 +495,10 @@ getList()
 
 .price-flat {
   color: #76879b;
+}
+
+.error-text {
+  color: #c45656;
 }
 
 .history-header {
