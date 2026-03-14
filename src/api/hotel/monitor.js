@@ -1,60 +1,68 @@
 import request from '@/utils/request'
 
-export function listHotelMonitor(query) {
+export function listCollectionTask(query) {
   return request({
-    url: '/hotel/monitor/list',
+    url: '/hotel/collect/task/list',
     method: 'get',
     params: query
   })
 }
 
-export function getHotelMonitor(monitorId) {
+export function getCollectionTask(taskId) {
   return request({
-    url: `/hotel/monitor/${monitorId}`,
+    url: `/hotel/collect/task/${taskId}`,
     method: 'get'
   })
 }
 
-export function addHotelMonitor(data) {
+export function addCollectionTask(data) {
   return request({
-    url: '/hotel/monitor',
+    url: '/hotel/collect/task',
     method: 'post',
     data
   })
 }
 
-export function updateHotelMonitor(data) {
+export function updateCollectionTask(data) {
   return request({
-    url: '/hotel/monitor',
+    url: '/hotel/collect/task',
     method: 'put',
     data
   })
 }
 
-export function delHotelMonitor(monitorId) {
+export function delCollectionTask(taskId) {
   return request({
-    url: `/hotel/monitor/${monitorId}`,
+    url: `/hotel/collect/task/${taskId}`,
     method: 'delete'
   })
 }
 
-export function getHotelMonitorOverview() {
+export function crawlCollectionTask(taskId) {
   return request({
-    url: '/hotel/monitor/overview',
-    method: 'get'
-  })
-}
-
-export function getHotelMonitorHistory(monitorId) {
-  return request({
-    url: `/hotel/monitor/${monitorId}/history`,
-    method: 'get'
-  })
-}
-
-export function crawlHotelMonitor(monitorId) {
-  return request({
-    url: `/hotel/monitor/${monitorId}/crawl`,
+    url: `/hotel/collect/task/${taskId}/crawl`,
     method: 'post'
+  })
+}
+
+export function getCollectionOverview() {
+  return request({
+    url: '/hotel/collect/task/overview',
+    method: 'get'
+  })
+}
+
+export function listCollectionSnapshots(taskId) {
+  return request({
+    url: '/hotel/collect/snapshot/list',
+    method: 'get',
+    params: { taskId }
+  })
+}
+
+export function listRoomSnapshots(snapshotId) {
+  return request({
+    url: `/hotel/collect/snapshot/${snapshotId}/rooms`,
+    method: 'get'
   })
 }

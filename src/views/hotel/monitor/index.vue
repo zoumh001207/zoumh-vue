@@ -1,7 +1,7 @@
 <template>
   <div class="app-container hotel-monitor-page">
     <el-row :gutter="16" class="summary-row">
-      <el-col v-for="card in summaryCards" :key="card.key" :xs="24" :sm="12" :lg="6">
+      <el-col v-for="card in summaryCards" :key="card.key" :xs="24" :sm="12" :lg="4">
         <el-card shadow="hover" class="summary-card">
           <div class="summary-title">{{ card.title }}</div>
           <div class="summary-value">{{ overview[card.key] ?? 0 }}</div>
@@ -11,19 +11,19 @@
     </el-row>
 
     <el-alert
-      title="这不是手工价格台账。每个任务会按照链接和抓取配置自动请求酒店详情页，提取价格并写入历史。"
+      title="当前先接携程城市级采集。选择城市后会抓取首屏酒店列表、最低价、基础房型、床型、取消规则和支付方式。"
       type="info"
       :closable="false"
       show-icon
     />
 
-    <el-form ref="queryRef" :model="queryParams" :inline="true" v-show="showSearch" label-width="80px">
-      <el-form-item label="酒店名称" prop="hotelName">
-        <el-input v-model="queryParams.hotelName" placeholder="请输入酒店名称" clearable style="width: 220px" @keyup.enter="handleQuery" />
+    <el-form ref="queryRef" :model="queryParams" :inline="true" v-show="showSearch" label-width="72px">
+      <el-form-item label="任务名称" prop="taskName">
+        <el-input v-model="queryParams.taskName" placeholder="请输入任务名称" clearable style="width: 220px" @keyup.enter="handleQuery" />
       </el-form-item>
-      <el-form-item label="监控平台" prop="platform">
-        <el-select v-model="queryParams.platform" placeholder="请选择平台" clearable style="width: 180px">
-          <el-option v-for="item in platformOptions" :key="item" :label="item" :value="item" />
+      <el-form-item label="城市" prop="cityName">
+        <el-select v-model="queryParams.cityName" placeholder="请选择城市" clearable style="width: 180px">
+          <el-option v-for="item in cityOptions" :key="item.code" :label="item.name" :value="item.name" />
         </el-select>
       </el-form-item>
       <el-form-item label="状态" prop="status">
@@ -47,48 +47,37 @@
       <el-col :span="1.5">
         <el-button type="danger" plain icon="Delete" :disabled="multiple" @click="handleDelete" v-hasPermi="['hotel:monitor:remove']">删除任务</el-button>
       </el-col>
-      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList" />
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getTaskList" />
     </el-row>
 
-    <el-table v-loading="loading" :data="monitorList" @selection-change="handleSelectionChange">
+    <el-table v-loading="loading" :data="taskList" @selection-change="handleSelectionChange" @row-click="handleSelectTask">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="酒店" align="center" prop="hotelName" min-width="160" />
-      <el-table-column label="平台" align="center" prop="platform" width="110" />
-      <el-table-column label="当前价" align="center" width="120">
+      <el-table-column label="任务名称" prop="taskName" min-width="160" />
+      <el-table-column label="平台" width="90" align="center">
         <template #default="scope">
-          <span>{{ formatPrice(scope.row.currentPrice, scope.row.currency) }}</span>
+          <el-tag>{{ platformLabel(scope.row.platform) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="目标价" align="center" width="120">
+      <el-table-column label="城市" prop="cityName" width="120" align="center" />
+      <el-table-column label="入住/离店" min-width="180" align="center">
         <template #default="scope">
-          <span>{{ formatPrice(scope.row.targetPrice, scope.row.currency) }}</span>
+          <span>{{ scope.row.checkInDate }} 至 {{ scope.row.checkOutDate }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="抓取" align="center" width="100">
-        <template #default="scope">
-          <el-tag :type="scope.row.crawlEnabled === 'Y' ? 'success' : 'info'">
-            {{ scope.row.crawlEnabled === 'Y' ? '开启' : '关闭' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="状态" align="center" width="100">
+      <el-table-column label="平台酒店数" prop="platformHotelCount" width="110" align="center" />
+      <el-table-column label="已采集酒店" prop="capturedHotelCount" width="110" align="center" />
+      <el-table-column label="状态" width="100" align="center">
         <template #default="scope">
           <el-tag :type="statusTagMap[scope.row.status] || 'info'">{{ statusLabel(scope.row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="最近采集" align="center" prop="lastCrawledAt" width="170" />
-      <el-table-column label="最近检查" align="center" prop="lastCheckedTime" width="170" />
-      <el-table-column label="错误信息" align="center" min-width="220" show-overflow-tooltip>
+      <el-table-column label="最近采集" prop="lastCrawledAt" width="170" align="center" />
+      <el-table-column label="错误信息" prop="lastErrorMessage" min-width="220" show-overflow-tooltip />
+      <el-table-column label="操作" width="240" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
-          <span class="error-text">{{ scope.row.lastErrorMessage || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" width="300" class-name="small-padding fixed-width">
-        <template #default="scope">
-          <el-button link type="primary" icon="Refresh" @click="handleCrawl(scope.row)" v-hasPermi="['hotel:monitor:query']">立即抓取</el-button>
-          <el-button link type="primary" icon="Histogram" @click="handleViewHistory(scope.row)" v-hasPermi="['hotel:monitor:query']">价格记录</el-button>
-          <el-button link type="primary" icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['hotel:monitor:edit']">修改</el-button>
-          <el-button link type="primary" icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['hotel:monitor:remove']">删除</el-button>
+          <el-button link type="primary" icon="Refresh" @click.stop="handleCrawl(scope.row)">立即采集</el-button>
+          <el-button link type="primary" icon="View" @click.stop="handleSelectTask(scope.row)">查看结果</el-button>
+          <el-button link type="primary" icon="Delete" @click.stop="handleDelete(scope.row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -98,87 +87,79 @@
       :total="total"
       v-model:page="queryParams.pageNum"
       v-model:limit="queryParams.pageSize"
-      @pagination="getList"
+      @pagination="getTaskList"
     />
 
-    <el-dialog :title="title" v-model="open" width="760px" append-to-body>
-      <el-form ref="monitorRef" :model="form" :rules="rules" label-width="110px">
+    <el-card shadow="never" class="snapshot-card">
+      <template #header>
+        <div class="card-header">
+          <span>{{ currentTask ? `${currentTask.taskName} 的酒店快照` : '酒店快照' }}</span>
+          <span class="subtle">{{ currentTask ? `${currentTask.cityName} · ${platformLabel(currentTask.platform)}` : '点击上方任务查看采集结果' }}</span>
+        </div>
+      </template>
+      <el-empty v-if="!currentTask" description="请选择采集任务" />
+      <el-table v-else v-loading="snapshotLoading" :data="snapshotList">
+        <el-table-column label="酒店名称" prop="hotelName" min-width="180" />
+        <el-table-column label="类型" prop="hotelType" width="100" align="center" />
+        <el-table-column label="星级" prop="starLabel" width="90" align="center" />
+        <el-table-column label="评分" prop="commentScore" width="90" align="center" />
+        <el-table-column label="点评数" prop="reviewCount" width="110" align="center" />
+        <el-table-column label="最低价" width="110" align="center">
+          <template #default="scope">
+            <span>{{ formatPrice(scope.row.minPrice, scope.row.currency) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="位置说明" prop="locationText" min-width="200" show-overflow-tooltip />
+        <el-table-column label="采集时间" prop="crawledAt" width="170" align="center" />
+        <el-table-column label="操作" width="180" align="center">
+          <template #default="scope">
+            <el-button link type="primary" icon="Tickets" @click="handleViewRooms(scope.row)">房型详情</el-button>
+            <el-button link type="primary" icon="Link" @click="handleOpenHotel(scope.row)">打开携程</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
+    <el-dialog :title="title" v-model="open" width="680px" append-to-body>
+      <el-form ref="taskRef" :model="form" :rules="rules" label-width="96px">
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="酒店名称" prop="hotelName">
-              <el-input v-model="form.hotelName" placeholder="请输入酒店名称" />
+            <el-form-item label="任务名称" prop="taskName">
+              <el-input v-model="form.taskName" placeholder="请输入任务名称" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="监控平台" prop="platform">
+            <el-form-item label="平台" prop="platform">
               <el-select v-model="form.platform" placeholder="请选择平台">
-                <el-option v-for="item in platformOptions" :key="item" :label="item" :value="item" />
+                <el-option label="携程" value="ctrip" />
               </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="城市" prop="cityCode">
+              <el-select v-model="form.cityCode" placeholder="请选择城市" @change="handleCityChange">
+                <el-option v-for="item in cityOptions" :key="item.code" :label="item.name" :value="item.code" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="城市名称">
+              <el-input v-model="form.cityName" disabled />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="入住日期" prop="checkInDate">
-              <el-date-picker v-model="form.checkInDate" type="date" value-format="YYYY-MM-DD" placeholder="选择入住日期" style="width: 100%" />
+              <el-date-picker v-model="form.checkInDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="离店日期" prop="checkOutDate">
-              <el-date-picker v-model="form.checkOutDate" type="date" value-format="YYYY-MM-DD" placeholder="选择离店日期" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="目标价格" prop="targetPrice">
-              <el-input-number v-model="form.targetPrice" :precision="2" :min="0.01" :step="50" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="币种" prop="currency">
-              <el-select v-model="form.currency" placeholder="请选择币种">
-                <el-option v-for="item in currencyOptions" :key="item" :label="item" :value="item" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="渠道链接" prop="channelUrl">
-              <el-input v-model="form.channelUrl" placeholder="请输入酒店详情页链接" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="启用抓取" prop="crawlEnabled">
-              <el-radio-group v-model="form.crawlEnabled">
-                <el-radio value="Y">开启</el-radio>
-                <el-radio value="N">关闭</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="抓取策略" prop="crawlStrategy">
-              <el-select v-model="form.crawlStrategy" placeholder="请选择策略">
-                <el-option label="HTML 抓取" value="html" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="通知提醒" prop="notifyEnabled">
-              <el-radio-group v-model="form.notifyEnabled">
-                <el-radio value="Y">开启</el-radio>
-                <el-radio value="N">关闭</el-radio>
-              </el-radio-group>
-            </el-form-item>
-          </el-col>
-          <el-col :span="24">
-            <el-form-item label="抓取配置" prop="crawlConfig">
-              <el-input
-                v-model="form.crawlConfig"
-                type="textarea"
-                :rows="7"
-                placeholder='请输入 JSON，例如 {"priceSelector":".price-number","priceRegex":"(\\d+(?:\\.\\d{1,2})?)","currency":"CNY","source":"ctrip"}'
-              />
+              <el-date-picker v-model="form.checkOutDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="记录抓取规则、酒店别名或反爬注意事项" />
+              <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="记录采集用途。当前先抓携程首屏酒店和房型标签，后续再补翻页与详情页房价。" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -191,20 +172,16 @@
       </template>
     </el-dialog>
 
-    <el-drawer v-model="historyOpen" title="价格记录" size="520px">
-      <div class="history-header">
-        <div class="history-title">{{ currentHistoryTitle }}</div>
-        <el-tag type="info">{{ historyList.length }} 条</el-tag>
-      </div>
-      <el-empty v-if="historyList.length === 0" description="暂无记录" />
+    <el-drawer v-model="roomOpen" title="房型快照" size="520px">
+      <el-empty v-if="roomList.length === 0" description="暂无房型数据" />
       <el-timeline v-else>
-        <el-timeline-item v-for="item in historyList" :key="item.historyId" :timestamp="item.observedAt" placement="top">
-          <div class="history-price">{{ formatPrice(item.observedPrice, historyCurrency) }}</div>
-          <div class="history-meta">
-            <span :class="changeClass(item.changeAmount)">{{ formatChange(item.changeAmount, historyCurrency) }}</span>
-            <span>{{ statusLabel(item.availability) }}</span>
-          </div>
-          <div class="history-note">{{ item.sourceNote || '价格检查记录' }}</div>
+        <el-timeline-item v-for="item in roomList" :key="item.roomSnapshotId" placement="top">
+          <div class="room-title">{{ item.roomName }}</div>
+          <div class="room-meta">床型：{{ item.bedInfo || '--' }}</div>
+          <div class="room-meta">早餐：{{ item.breakfastInfo || '--' }}</div>
+          <div class="room-meta">取消：{{ item.cancelPolicy || '--' }}</div>
+          <div class="room-meta">支付：{{ item.payType || '--' }}</div>
+          <div class="room-meta">房量：{{ item.roomQuantity || '--' }}</div>
         </el-timeline-item>
       </el-timeline>
     </el-drawer>
@@ -213,88 +190,91 @@
 
 <script setup name="HotelMonitor">
 import {
-  addHotelMonitor,
-  crawlHotelMonitor,
-  delHotelMonitor,
-  getHotelMonitor,
-  getHotelMonitorHistory,
-  getHotelMonitorOverview,
-  listHotelMonitor,
-  updateHotelMonitor
+  addCollectionTask,
+  crawlCollectionTask,
+  delCollectionTask,
+  getCollectionOverview,
+  getCollectionTask,
+  listCollectionSnapshots,
+  listCollectionTask,
+  listRoomSnapshots,
+  updateCollectionTask
 } from '@/api/hotel/monitor'
 
 const { proxy } = getCurrentInstance()
 
 const loading = ref(false)
+const snapshotLoading = ref(false)
 const showSearch = ref(true)
 const open = ref(false)
-const historyOpen = ref(false)
+const roomOpen = ref(false)
 const title = ref('')
 const total = ref(0)
-const monitorList = ref([])
-const historyList = ref([])
-const currentHistoryTitle = ref('')
-const historyCurrency = ref('CNY')
+const taskList = ref([])
+const snapshotList = ref([])
+const roomList = ref([])
+const currentTask = ref(null)
 const ids = ref([])
 const single = ref(true)
 const multiple = ref(true)
-const overview = ref({
-  total: 0,
-  tracking: 0,
-  alerted: 0,
-  paused: 0,
-  targetReached: 0
-})
+const overview = ref({ tasks: 0, running: 0, success: 0, failed: 0, hotels: 0, rooms: 0 })
 
 const statusOptions = [
-  { label: '监控中', value: 'tracking' },
-  { label: '已触达', value: 'alerted' },
-  { label: '已暂停', value: 'paused' },
-  { label: '已结束', value: 'closed' }
+  { label: '待执行', value: 'pending' },
+  { label: '执行中', value: 'running' },
+  { label: '成功', value: 'success' },
+  { label: '失败', value: 'failed' }
 ]
 
 const statusTagMap = {
-  tracking: 'primary',
-  alerted: 'success',
-  paused: 'warning',
-  closed: 'info'
+  pending: 'info',
+  running: 'warning',
+  success: 'success',
+  failed: 'danger'
 }
 
-const platformOptions = ['美团', '携程', '飞猪', 'Booking', 'Agoda', '同程', '去哪儿']
-const currencyOptions = ['CNY', 'HKD', 'USD', 'JPY']
+const cityOptions = [
+  { code: '2', name: '上海' },
+  { code: '1', name: '北京' },
+  { code: '32', name: '广州' },
+  { code: '30', name: '深圳' },
+  { code: '59', name: '杭州' },
+  { code: '58', name: '南京' }
+]
 
 const summaryCards = [
-  { key: 'total', title: '监控总数', desc: '当前已配置抓取任务' },
-  { key: 'tracking', title: '监控中', desc: '定时轮询酒店价格' },
-  { key: 'alerted', title: '已触达', desc: '当前价格已经打到目标线' },
-  { key: 'targetReached', title: '可下单', desc: '当前价格不高于目标价' }
+  { key: 'tasks', title: '任务数', desc: '已配置城市采集任务' },
+  { key: 'running', title: '执行中', desc: '当前后台正在采集' },
+  { key: 'success', title: '成功任务', desc: '最近成功完成的任务' },
+  { key: 'failed', title: '失败任务', desc: '需要排查的平台任务' },
+  { key: 'hotels', title: '酒店快照', desc: '当前已落库酒店数' },
+  { key: 'rooms', title: '房型快照', desc: '当前已落库房型数' }
 ]
 
 const data = reactive({
   queryParams: {
     pageNum: 1,
     pageSize: 10,
-    hotelName: undefined,
-    platform: undefined,
+    taskName: undefined,
+    cityName: undefined,
     status: undefined
   },
   form: {},
   rules: {
-    hotelName: [{ required: true, message: '酒店名称不能为空', trigger: 'blur' }],
-    platform: [{ required: true, message: '监控平台不能为空', trigger: 'change' }],
+    taskName: [{ required: true, message: '任务名称不能为空', trigger: 'blur' }],
+    platform: [{ required: true, message: '平台不能为空', trigger: 'change' }],
+    cityCode: [{ required: true, message: '城市不能为空', trigger: 'change' }],
     checkInDate: [{ required: true, message: '入住日期不能为空', trigger: 'change' }],
-    checkOutDate: [{ required: true, message: '离店日期不能为空', trigger: 'change' }],
-    targetPrice: [{ required: true, message: '目标价格不能为空', trigger: 'blur' }],
-    channelUrl: [{ required: true, message: '渠道链接不能为空', trigger: 'blur' }]
+    checkOutDate: [{ required: true, message: '离店日期不能为空', trigger: 'change' }]
   }
 })
 
 const { queryParams, form, rules } = toRefs(data)
 
-function getList() {
+function getTaskList() {
   loading.value = true
-  listHotelMonitor(queryParams.value).then(response => {
-    monitorList.value = response.rows || []
+  listCollectionTask(queryParams.value).then(response => {
+    taskList.value = response.rows || []
     total.value = response.total || 0
   }).finally(() => {
     loading.value = false
@@ -302,37 +282,38 @@ function getList() {
 }
 
 function getOverview() {
-  getHotelMonitorOverview().then(response => {
+  getCollectionOverview().then(response => {
     overview.value = response.data || {}
+  })
+}
+
+function getSnapshots(taskId) {
+  snapshotLoading.value = true
+  listCollectionSnapshots(taskId).then(response => {
+    snapshotList.value = response.data || []
+  }).finally(() => {
+    snapshotLoading.value = false
   })
 }
 
 function reset() {
   form.value = {
-    monitorId: undefined,
-    hotelName: undefined,
-    platform: '携程',
-    city: undefined,
-    roomType: undefined,
+    taskId: undefined,
+    taskName: undefined,
+    platform: 'ctrip',
+    cityCode: '2',
+    cityName: '上海',
     checkInDate: undefined,
     checkOutDate: undefined,
-    targetPrice: undefined,
-    currentPrice: undefined,
-    currency: 'CNY',
-    channelUrl: undefined,
-    crawlEnabled: 'Y',
-    crawlStrategy: 'html',
-    crawlConfig: '{\n  "priceSelector": ".price",\n  "priceRegex": "(\\\\d+(?:\\\\.\\\\d{1,2})?)",\n  "currency": "CNY"\n}',
-    status: 'tracking',
-    notifyEnabled: 'Y',
+    status: 'pending',
     remark: undefined
   }
-  proxy.resetForm('monitorRef')
+  proxy.resetForm('taskRef')
 }
 
 function handleQuery() {
   queryParams.value.pageNum = 1
-  getList()
+  getTaskList()
   getOverview()
 }
 
@@ -342,58 +323,73 @@ function resetQuery() {
 }
 
 function handleSelectionChange(selection) {
-  ids.value = selection.map(item => item.monitorId)
+  ids.value = selection.map(item => item.taskId)
   single.value = selection.length !== 1
   multiple.value = selection.length === 0
+}
+
+function handleSelectTask(row) {
+  currentTask.value = row
+  getSnapshots(row.taskId)
 }
 
 function handleAdd() {
   reset()
   open.value = true
-  title.value = '新增抓取任务'
+  title.value = '新增城市采集任务'
 }
 
 function handleUpdate(row) {
   reset()
-  const monitorId = row?.monitorId || ids.value[0]
-  getHotelMonitor(monitorId).then(response => {
+  const taskId = row?.taskId || ids.value[0]
+  getCollectionTask(taskId).then(response => {
     form.value = response.data
-    if (!form.value.crawlConfig) {
-      form.value.crawlConfig = '{\n  "priceSelector": ".price",\n  "priceRegex": "(\\\\d+(?:\\\\.\\\\d{1,2})?)",\n  "currency": "CNY"\n}'
-    }
     open.value = true
-    title.value = '修改抓取任务'
+    title.value = '修改城市采集任务'
   })
 }
 
 function handleDelete(row) {
-  const monitorIds = row?.monitorId ? [row.monitorId] : ids.value
-  proxy.$modal.confirm(`是否确认删除抓取任务 "${monitorIds.join(',')}"？`).then(() => {
-    return delHotelMonitor(monitorIds.join(','))
+  const taskIds = row?.taskId ? [row.taskId] : ids.value
+  proxy.$modal.confirm(`是否确认删除采集任务 "${taskIds.join(',')}"？`).then(() => {
+    return delCollectionTask(taskIds.join(','))
   }).then(() => {
     proxy.$modal.msgSuccess('删除成功')
-    getList()
+    if (currentTask.value && taskIds.includes(currentTask.value.taskId)) {
+      currentTask.value = null
+      snapshotList.value = []
+    }
+    getTaskList()
     getOverview()
   }).catch(() => {})
-}
-
-function handleViewHistory(row) {
-  currentHistoryTitle.value = `${row.hotelName} · ${row.platform}`
-  historyCurrency.value = row.currency || 'CNY'
-  getHotelMonitorHistory(row.monitorId).then(response => {
-    historyList.value = response.data || []
-    historyOpen.value = true
-  })
 }
 
 function handleCrawl(row) {
-  proxy.$modal.confirm(`立即抓取 ${row.hotelName} 当前价格？`).then(() => {
-    return crawlHotelMonitor(row.monitorId)
-  }).then(response => {
-    proxy.$modal.msgSuccess(`抓取成功，当前价格 ${formatPrice(response.data.price, response.data.currency)}`)
-    getList()
-    getOverview()
+  proxy.$modal.confirm(`立即采集 ${row.cityName} 的携程酒店列表？`).then(() => {
+    return crawlCollectionTask(row.taskId)
+  }).then(() => {
+    proxy.$modal.msgSuccess('采集已完成')
+    handleQuery()
+    handleSelectTask(row)
   }).catch(() => {})
+}
+
+function handleViewRooms(row) {
+  listRoomSnapshots(row.snapshotId).then(response => {
+    roomList.value = response.data || []
+    roomOpen.value = true
+  })
+}
+
+function handleOpenHotel(row) {
+  if (row.hotelUrl) {
+    window.open(row.hotelUrl, '_blank')
+  }
+}
+
+function handleCityChange(value) {
+  const city = cityOptions.find(item => item.code === value)
+  form.value.cityName = city ? city.name : ''
 }
 
 function cancel() {
@@ -402,16 +398,15 @@ function cancel() {
 }
 
 function submitForm() {
-  proxy.$refs.monitorRef.validate(valid => {
+  proxy.$refs.taskRef.validate(valid => {
     if (!valid) {
       return
     }
-    const request = form.value.monitorId ? updateHotelMonitor(form.value) : addHotelMonitor(form.value)
+    const request = form.value.taskId ? updateCollectionTask(form.value) : addCollectionTask(form.value)
     request.then(() => {
-      proxy.$modal.msgSuccess(form.value.monitorId ? '修改成功' : '新增成功')
+      proxy.$modal.msgSuccess(form.value.taskId ? '修改成功' : '新增成功')
       open.value = false
-      getList()
-      getOverview()
+      handleQuery()
     })
   })
 }
@@ -423,33 +418,17 @@ function formatPrice(value, currency) {
   return `${currency || 'CNY'} ${Number(value).toFixed(2)}`
 }
 
-function formatChange(value, currency) {
-  if (value === null || value === undefined) {
-    return '--'
-  }
-  const amount = Number(value)
-  const prefix = amount > 0 ? '+' : ''
-  return `${prefix}${currency || 'CNY'} ${amount.toFixed(2)}`
-}
-
-function changeClass(value) {
-  const amount = Number(value || 0)
-  if (amount < 0) {
-    return 'price-down'
-  }
-  if (amount > 0) {
-    return 'price-up'
-  }
-  return 'price-flat'
-}
-
 function statusLabel(value) {
   const item = statusOptions.find(option => option.value === value)
   return item ? item.label : value || '未知'
 }
 
+function platformLabel(value) {
+  return value === 'ctrip' ? '携程' : value
+}
+
 getOverview()
-getList()
+getTaskList()
 </script>
 
 <style lang="scss" scoped>
@@ -457,10 +436,6 @@ getList()
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.summary-row {
-  margin-bottom: 4px;
 }
 
 .summary-card {
@@ -485,50 +460,30 @@ getList()
   }
 }
 
-.price-up {
-  color: #d03050;
+.snapshot-card {
+  margin-top: 8px;
 }
 
-.price-down {
-  color: #1f9d55;
-}
-
-.price-flat {
-  color: #76879b;
-}
-
-.error-text {
-  color: #c45656;
-}
-
-.history-header {
+.card-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  gap: 16px;
+  font-weight: 700;
 }
 
-.history-title {
+.subtle {
+  color: #7e8da3;
+  font-weight: 400;
+}
+
+.room-title {
   font-size: 16px;
   font-weight: 700;
   color: #153a63;
 }
 
-.history-price {
-  font-size: 18px;
-  font-weight: 700;
-  color: #153a63;
-}
-
-.history-meta {
-  display: flex;
-  gap: 12px;
+.room-meta {
   margin-top: 6px;
   color: #6e8098;
-}
-
-.history-note {
-  margin-top: 6px;
-  color: #8a98aa;
 }
 </style>
