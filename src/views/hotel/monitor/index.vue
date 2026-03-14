@@ -11,7 +11,7 @@
     </el-row>
 
     <el-alert
-      title="当前先接携程城市级采集。选择城市后会抓取首屏酒店列表、最低价、基础房型、床型、取消规则和支付方式。"
+      title="当前按携程城市任务采集公开房价页。支持按区县/商圈/地标缩小范围，并直接展示酒店、预览房型和价格。"
       type="info"
       :closable="false"
       show-icon
@@ -25,6 +25,9 @@
         <el-select v-model="queryParams.cityName" placeholder="请选择城市" clearable style="width: 180px">
           <el-option v-for="item in cityOptions" :key="item.code" :label="item.name" :value="item.name" />
         </el-select>
+      </el-form-item>
+      <el-form-item label="位置" prop="locationKeyword">
+        <el-input v-model="queryParams.locationKeyword" placeholder="区县/商圈/地标" clearable style="width: 180px" @keyup.enter="handleQuery" />
       </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 160px">
@@ -58,7 +61,12 @@
           <el-tag>{{ platformLabel(scope.row.platform) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="城市" prop="cityName" width="120" align="center" />
+      <el-table-column label="城市 / 位置" min-width="180">
+        <template #default="scope">
+          <div>{{ scope.row.cityName }}</div>
+          <div class="table-subtext">{{ scope.row.locationKeyword || '全城' }}</div>
+        </template>
+      </el-table-column>
       <el-table-column label="入住/离店" min-width="180" align="center">
         <template #default="scope">
           <span>{{ scope.row.checkInDate }} 至 {{ scope.row.checkOutDate }}</span>
@@ -94,12 +102,13 @@
       <template #header>
         <div class="card-header">
           <span>{{ currentTask ? `${currentTask.taskName} 的酒店快照` : '酒店快照' }}</span>
-          <span class="subtle">{{ currentTask ? `${currentTask.cityName} · ${platformLabel(currentTask.platform)}` : '点击上方任务查看采集结果' }}</span>
+          <span class="subtle">{{ currentTask ? `${currentTask.cityName} · ${currentTask.locationKeyword || '全城'} · ${platformLabel(currentTask.platform)}` : '点击上方任务查看采集结果' }}</span>
         </div>
       </template>
       <el-empty v-if="!currentTask" description="请选择采集任务" />
       <el-table v-else v-loading="snapshotLoading" :data="snapshotList">
         <el-table-column label="酒店名称" prop="hotelName" min-width="180" />
+        <el-table-column label="预览房型" prop="previewRoomName" min-width="180" show-overflow-tooltip />
         <el-table-column label="类型" prop="hotelType" width="100" align="center" />
         <el-table-column label="星级" prop="starLabel" width="90" align="center" />
         <el-table-column label="评分" prop="commentScore" width="90" align="center" />
@@ -137,29 +146,57 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="城市" prop="cityCode">
-              <el-select v-model="form.cityCode" placeholder="请选择城市" @change="handleCityChange">
+              <el-select
+                v-model="form.cityCode"
+                placeholder="请选择或输入携程城市编码"
+                filterable
+                allow-create
+                default-first-option
+                @change="handleCityChange"
+              >
                 <el-option v-for="item in cityOptions" :key="item.code" :label="item.name" :value="item.code" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="城市名称">
-              <el-input v-model="form.cityName" disabled />
+            <el-form-item label="城市名称" prop="cityName">
+              <el-input v-model="form.cityName" placeholder="请输入城市名称，例：上海" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="24">
+            <el-form-item label="区县/位置" prop="locationKeyword">
+              <el-select
+                v-model="form.locationKeyword"
+                placeholder="请选择区县/商圈/地标，也可直接输入"
+                filterable
+                clearable
+                allow-create
+                default-first-option
+                style="width: 100%"
+                @visible-change="handleLocationDropdown"
+              >
+                <el-option
+                  v-for="item in locationOptions"
+                  :key="`${item.type}-${item.value}`"
+                  :label="`${item.label} · ${item.type}`"
+                  :value="item.value"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="入住日期" prop="checkInDate">
-              <el-date-picker v-model="form.checkInDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+              <el-date-picker v-model="form.checkInDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" @change="loadLocationOptions" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="离店日期" prop="checkOutDate">
-              <el-date-picker v-model="form.checkOutDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" />
+              <el-date-picker v-model="form.checkOutDate" type="date" value-format="YYYY-MM-DD" style="width: 100%" @change="loadLocationOptions" />
             </el-form-item>
           </el-col>
           <el-col :span="24">
             <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="记录采集用途。当前先抓携程首屏酒店和房型标签，后续再补翻页与详情页房价。" />
+              <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="记录采集用途。当前会抓酒店、预览房型、现价、原价、含税总价和位置说明。" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -177,11 +214,17 @@
       <el-timeline v-else>
         <el-timeline-item v-for="item in roomList" :key="item.roomSnapshotId" placement="top">
           <div class="room-title">{{ item.roomName }}</div>
+          <div class="room-price-row">
+            <span class="price-chip current">现价 {{ formatPrice(item.salePrice, item.currency) }}</span>
+            <span class="price-chip">原价 {{ formatPrice(item.originalPrice, item.currency) }}</span>
+            <span class="price-chip">总价 {{ formatPrice(item.totalPrice, item.currency) }}</span>
+          </div>
           <div class="room-meta">床型：{{ item.bedInfo || '--' }}</div>
           <div class="room-meta">早餐：{{ item.breakfastInfo || '--' }}</div>
           <div class="room-meta">取消：{{ item.cancelPolicy || '--' }}</div>
           <div class="room-meta">支付：{{ item.payType || '--' }}</div>
           <div class="room-meta">房量：{{ item.roomQuantity || '--' }}</div>
+          <div class="room-meta">价格说明：{{ item.priceDescription || '--' }}</div>
         </el-timeline-item>
       </el-timeline>
     </el-drawer>
@@ -195,6 +238,7 @@ import {
   delCollectionTask,
   getCollectionOverview,
   getCollectionTask,
+  listCollectionLocationOptions,
   listCollectionSnapshots,
   listCollectionTask,
   listRoomSnapshots,
@@ -211,6 +255,7 @@ const roomOpen = ref(false)
 const title = ref('')
 const total = ref(0)
 const taskList = ref([])
+const locationOptions = ref([])
 const snapshotList = ref([])
 const roomList = ref([])
 const currentTask = ref(null)
@@ -257,6 +302,7 @@ const data = reactive({
     pageSize: 10,
     taskName: undefined,
     cityName: undefined,
+    locationKeyword: undefined,
     status: undefined
   },
   form: {},
@@ -264,6 +310,7 @@ const data = reactive({
     taskName: [{ required: true, message: '任务名称不能为空', trigger: 'blur' }],
     platform: [{ required: true, message: '平台不能为空', trigger: 'change' }],
     cityCode: [{ required: true, message: '城市不能为空', trigger: 'change' }],
+    cityName: [{ required: true, message: '城市名称不能为空', trigger: 'blur' }],
     checkInDate: [{ required: true, message: '入住日期不能为空', trigger: 'change' }],
     checkOutDate: [{ required: true, message: '离店日期不能为空', trigger: 'change' }]
   }
@@ -303,6 +350,7 @@ function reset() {
     platform: 'ctrip',
     cityCode: '2',
     cityName: '上海',
+    locationKeyword: undefined,
     checkInDate: undefined,
     checkOutDate: undefined,
     status: 'pending',
@@ -335,8 +383,10 @@ function handleSelectTask(row) {
 
 function handleAdd() {
   reset()
+  locationOptions.value = []
   open.value = true
   title.value = '新增城市采集任务'
+  loadLocationOptions()
 }
 
 function handleUpdate(row) {
@@ -344,6 +394,7 @@ function handleUpdate(row) {
   const taskId = row?.taskId || ids.value[0]
   getCollectionTask(taskId).then(response => {
     form.value = response.data
+    loadLocationOptions()
     open.value = true
     title.value = '修改城市采集任务'
   })
@@ -390,6 +441,28 @@ function handleOpenHotel(row) {
 function handleCityChange(value) {
   const city = cityOptions.find(item => item.code === value)
   form.value.cityName = city ? city.name : ''
+  form.value.locationKeyword = undefined
+  loadLocationOptions()
+}
+
+function handleLocationDropdown(visible) {
+  if (visible) {
+    loadLocationOptions()
+  }
+}
+
+function loadLocationOptions() {
+  if (!form.value.cityCode) {
+    locationOptions.value = []
+    return
+  }
+  listCollectionLocationOptions({
+    cityCode: form.value.cityCode,
+    checkInDate: form.value.checkInDate,
+    checkOutDate: form.value.checkOutDate
+  }).then(response => {
+    locationOptions.value = response.data || []
+  })
 }
 
 function cancel() {
@@ -476,10 +549,38 @@ getTaskList()
   font-weight: 400;
 }
 
+.table-subtext {
+  margin-top: 4px;
+  color: #7e8da3;
+  font-size: 12px;
+}
+
 .room-title {
   font-size: 16px;
   font-weight: 700;
   color: #153a63;
+}
+
+.room-price-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.price-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eef4fb;
+  color: #365579;
+  font-size: 12px;
+}
+
+.price-chip.current {
+  background: #dff3ea;
+  color: #12724c;
 }
 
 .room-meta {

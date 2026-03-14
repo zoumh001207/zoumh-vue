@@ -52,6 +52,14 @@ export function getCollectionOverview() {
   })
 }
 
+export function listCollectionLocationOptions(params) {
+  return request({
+    url: '/hotel/collect/task/location-options',
+    method: 'get',
+    params
+  })
+}
+
 export function listCollectionSnapshots(taskId) {
   return request({
     url: '/hotel/collect/snapshot/list',
