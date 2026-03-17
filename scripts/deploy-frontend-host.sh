@@ -12,6 +12,49 @@ FRONTEND_PROXY_PASS="${FRONTEND_PROXY_PASS:-http://127.0.0.1:8080/}"
 
 mkdir -p "${ARCHIVE_DIR}" "${HTML_DIR}" "${NGINX_CONF_DIR}"
 
+ensure_docker_shell_env() {
+  local docker_bin docker_dir env_file helper_file
+  docker_bin="$(command -v docker || true)"
+  if [[ -z "${docker_bin}" ]]; then
+    echo "docker command not found in deploy environment" >&2
+    exit 1
+  fi
+
+  docker_dir="$(dirname "${docker_bin}")"
+  env_file="/etc/profile.d/zoumh-docker.sh"
+  helper_file="/zoumh/sh/docker.sh"
+
+  mkdir -p /etc/profile.d /zoumh/sh
+  ln -sf "${docker_bin}" /usr/local/bin/docker || true
+  ln -sf "${docker_bin}" /usr/bin/docker || true
+
+  cat > "${env_file}" <<EOF
+export DOCKER_HOME='${docker_dir}'
+case ":\$PATH:" in
+  *:"${docker_dir}":*) ;;
+  *) export PATH="${docker_dir}:\$PATH" ;;
+esac
+EOF
+  chmod 644 "${env_file}"
+
+  cat > "${helper_file}" <<EOF
+#!/usr/bin/env bash
+set -e
+export DOCKER_HOME='${docker_dir}'
+case ":\$PATH:" in
+  *:"${docker_dir}":*) ;;
+  *) export PATH="${docker_dir}:\$PATH" ;;
+esac
+
+if [[ \$# -eq 0 ]]; then
+  exec "${docker_bin}" --version
+fi
+
+exec "${docker_bin}" "\$@"
+EOF
+  chmod +x "${helper_file}"
+}
+
 if [[ ! -f "${ARCHIVE_PATH}" ]]; then
   echo "archive not found: ${ARCHIVE_PATH}" >&2
   exit 1
@@ -49,6 +92,8 @@ server {
     }
 }
 EOF
+
+ensure_docker_shell_env
 
 if command -v ss >/dev/null 2>&1; then
   if ss -ltnp 2>/dev/null | grep -q ':80 ' && ! docker ps --format '{{.Names}}' | grep -qx "${NGINX_CONTAINER_NAME}"; then
