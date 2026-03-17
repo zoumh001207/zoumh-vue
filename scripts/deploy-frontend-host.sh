@@ -12,6 +12,7 @@ FRONTEND_PROXY_PASS="${FRONTEND_PROXY_PASS:-http://127.0.0.1:8080/}"
 NGINX_MEMORY="${NGINX_MEMORY:-128m}"
 NGINX_MEMORY_RESERVATION="${NGINX_MEMORY_RESERVATION:-64m}"
 NGINX_PIDS_LIMIT="${NGINX_PIDS_LIMIT:-128}"
+DEPLOY_FRONTEND_CONTAINER="${DEPLOY_FRONTEND_CONTAINER:-false}"
 
 mkdir -p "${ARCHIVE_DIR}" "${HTML_DIR}" "${NGINX_CONF_DIR}"
 
@@ -177,32 +178,37 @@ server {
 EOF
 
 ensure_docker_shell_env
-
-if command -v ss >/dev/null 2>&1; then
-  if ss -ltnp 2>/dev/null | grep -q ':80 ' && ! docker ps --format '{{.Names}}' | grep -qx "${NGINX_CONTAINER_NAME}"; then
-    echo "port 80 is already in use, cannot start ${NGINX_CONTAINER_NAME}" >&2
-    exit 1
-  fi
-fi
-
 docker rm -f "${NGINX_CONTAINER_NAME}" >/dev/null 2>&1 || true
 
-docker run -d \
-  --name "${NGINX_CONTAINER_NAME}" \
-  --restart unless-stopped \
-  --network host \
-  --memory="${NGINX_MEMORY}" \
-  --memory-reservation="${NGINX_MEMORY_RESERVATION}" \
-  --pids-limit="${NGINX_PIDS_LIMIT}" \
-  --log-opt max-size=10m \
-  --log-opt max-file=3 \
-  -v "${HTML_DIR}:/usr/share/nginx/html:ro" \
-  -v "${NGINX_CONF_PATH}:/etc/nginx/conf.d/default.conf:ro" \
-  "${NGINX_IMAGE}" >/dev/null
+if [[ "${DEPLOY_FRONTEND_CONTAINER}" == "true" ]]; then
+  if command -v ss >/dev/null 2>&1; then
+    if ss -ltnp 2>/dev/null | grep -q ':80 ' && ! docker ps --format '{{.Names}}' | grep -qx "${NGINX_CONTAINER_NAME}"; then
+      echo "port 80 is already in use, cannot start ${NGINX_CONTAINER_NAME}" >&2
+      exit 1
+    fi
+  fi
+
+  docker run -d \
+    --name "${NGINX_CONTAINER_NAME}" \
+    --restart unless-stopped \
+    --network host \
+    --memory="${NGINX_MEMORY}" \
+    --memory-reservation="${NGINX_MEMORY_RESERVATION}" \
+    --pids-limit="${NGINX_PIDS_LIMIT}" \
+    --log-opt max-size=10m \
+    --log-opt max-file=3 \
+    -v "${HTML_DIR}:/usr/share/nginx/html:ro" \
+    -v "${NGINX_CONF_PATH}:/etc/nginx/conf.d/default.conf:ro" \
+    "${NGINX_IMAGE}" >/dev/null
+fi
 
 if [[ -n "${POST_DEPLOY_CMD:-}" ]]; then
   sh -lc "${POST_DEPLOY_CMD}"
 fi
 
-docker ps --format 'table {{.Names}}\t{{.Status}}' | grep -E "^${NGINX_CONTAINER_NAME}[[:space:]]" || true
-echo "frontend deployed to container ${NGINX_CONTAINER_NAME}"
+if [[ "${DEPLOY_FRONTEND_CONTAINER}" == "true" ]]; then
+  docker ps --format 'table {{.Names}}\t{{.Status}}' | grep -E "^${NGINX_CONTAINER_NAME}[[:space:]]" || true
+  echo "frontend deployed to container ${NGINX_CONTAINER_NAME}"
+else
+  echo "frontend files deployed to ${HTML_DIR}; container ${NGINX_CONTAINER_NAME} removed"
+fi
