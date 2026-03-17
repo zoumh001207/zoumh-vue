@@ -9,6 +9,9 @@ NGINX_CONF_PATH="${NGINX_CONF_PATH:-${NGINX_CONF_DIR}/default.conf}"
 NGINX_IMAGE="${NGINX_IMAGE:-nginx:1.27-alpine}"
 NGINX_CONTAINER_NAME="${NGINX_CONTAINER_NAME:-ruoyi-nginx}"
 FRONTEND_PROXY_PASS="${FRONTEND_PROXY_PASS:-http://127.0.0.1:8080/}"
+NGINX_MEMORY="${NGINX_MEMORY:-128m}"
+NGINX_MEMORY_RESERVATION="${NGINX_MEMORY_RESERVATION:-64m}"
+NGINX_PIDS_LIMIT="${NGINX_PIDS_LIMIT:-128}"
 
 mkdir -p "${ARCHIVE_DIR}" "${HTML_DIR}" "${NGINX_CONF_DIR}"
 
@@ -188,6 +191,11 @@ docker run -d \
   --name "${NGINX_CONTAINER_NAME}" \
   --restart unless-stopped \
   --network host \
+  --memory="${NGINX_MEMORY}" \
+  --memory-reservation="${NGINX_MEMORY_RESERVATION}" \
+  --pids-limit="${NGINX_PIDS_LIMIT}" \
+  --log-opt max-size=10m \
+  --log-opt max-file=3 \
   -v "${HTML_DIR}:/usr/share/nginx/html:ro" \
   -v "${NGINX_CONF_PATH}:/etc/nginx/conf.d/default.conf:ro" \
   "${NGINX_IMAGE}" >/dev/null
