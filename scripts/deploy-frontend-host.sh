@@ -23,11 +23,19 @@ ensure_docker_shell_env() {
   docker_dir="$(dirname "${docker_bin}")"
   env_file="/etc/profile.d/zoumh-docker.sh"
   helper_file="/zoumh/sh/docker.sh"
-  bashrc_snippet="# zoumh docker env"
+  bashrc_snippet="# >>> zoumh docker env >>>"
 
   mkdir -p /etc/profile.d /zoumh/sh
   ln -sf "${docker_bin}" /usr/local/bin/docker || true
   ln -sf "${docker_bin}" /usr/bin/docker || true
+
+  clean_shell_hook() {
+    local shell_file="$1"
+    [[ -f "${shell_file}" ]] || touch "${shell_file}"
+    sed -i '/# >>> zoumh docker env >>>/,/# <<< zoumh docker env <<</d' "${shell_file}"
+    sed -i '\|/etc/profile.d/zoumh-docker.sh|d' "${shell_file}"
+    sed -i '\|/zoumh/sh/docker.sh|d' "${shell_file}"
+  }
 
   cat > "${env_file}" <<EOF
 export DOCKER_HOME='${docker_dir}'
@@ -38,28 +46,27 @@ esac
 EOF
   chmod 644 "${env_file}"
 
-  if ! grep -Fq "${bashrc_snippet}" /etc/bashrc 2>/dev/null; then
-    cat >> /etc/bashrc <<EOF
+  clean_shell_hook /etc/bashrc
+  cat >> /etc/bashrc <<EOF
 
 ${bashrc_snippet}
 if [ -f /etc/profile.d/zoumh-docker.sh ]; then
   . /etc/profile.d/zoumh-docker.sh
 fi
+# <<< zoumh docker env <<<
 EOF
-  fi
 
   mkdir -p /root
   for shell_file in /root/.bashrc /root/.bash_profile; do
-    touch "${shell_file}"
-    if ! grep -Fq "${bashrc_snippet}" "${shell_file}"; then
-      cat >> "${shell_file}" <<EOF
+    clean_shell_hook "${shell_file}"
+    cat >> "${shell_file}" <<EOF
 
 ${bashrc_snippet}
 if [ -f /etc/profile.d/zoumh-docker.sh ]; then
   . /etc/profile.d/zoumh-docker.sh
 fi
+# <<< zoumh docker env <<<
 EOF
-    fi
   done
 
   cat > "${helper_file}" <<EOF
@@ -140,6 +147,28 @@ docker run -d \
 if [[ -n "${POST_DEPLOY_CMD:-}" ]]; then
   sh -lc "${POST_DEPLOY_CMD}"
 fi
+
+echo "--- ZOU_DOCKER_DIAG_BEGIN ---"
+echo "PATH=${PATH}"
+echo "-- command -v docker --"
+command -v docker || true
+echo "-- type docker --"
+type docker || true
+echo "-- ls docker bins --"
+ls -l /usr/bin/docker /usr/local/bin/docker 2>/dev/null || true
+echo "-- /etc/profile.d/zoumh-docker.sh --"
+sed -n '1,40p' /etc/profile.d/zoumh-docker.sh 2>/dev/null || true
+echo "-- /etc/bashrc tail --"
+tail -n 20 /etc/bashrc 2>/dev/null || true
+echo "-- /root/.bashrc tail --"
+tail -n 20 /root/.bashrc 2>/dev/null || true
+echo "-- /root/.bash_profile tail --"
+tail -n 20 /root/.bash_profile 2>/dev/null || true
+echo "-- /zoumh/sh/docker.sh --"
+sed -n '1,40p' /zoumh/sh/docker.sh 2>/dev/null || true
+echo "-- bash login docker --"
+bash -lc 'command -v docker && docker --version' || true
+echo "--- ZOU_DOCKER_DIAG_END ---"
 
 docker ps --format 'table {{.Names}}\t{{.Status}}' | grep -E "^${NGINX_CONTAINER_NAME}[[:space:]]" || true
 echo "frontend deployed to container ${NGINX_CONTAINER_NAME}"
