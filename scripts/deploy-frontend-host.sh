@@ -13,11 +13,20 @@ FRONTEND_PROXY_PASS="${FRONTEND_PROXY_PASS:-http://127.0.0.1:8080/}"
 mkdir -p "${ARCHIVE_DIR}" "${HTML_DIR}" "${NGINX_CONF_DIR}"
 
 ensure_docker_shell_env() {
-  local docker_bin docker_dir env_file helper_file bashrc_snippet
-  docker_bin="$(command -v docker || true)"
-  if [[ -z "${docker_bin}" ]]; then
+  local docker_cmd docker_bin docker_dir env_file helper_file bashrc_snippet
+  docker_cmd="$(command -v docker || true)"
+  if [[ -z "${docker_cmd}" ]]; then
     echo "docker command not found in deploy environment" >&2
     exit 1
+  fi
+
+  docker_bin="$(readlink -f "${docker_cmd}" 2>/dev/null || true)"
+  if [[ -z "${docker_bin}" || ! -x "${docker_bin}" ]]; then
+    if [[ -x /usr/bin/docker ]]; then
+      docker_bin="/usr/bin/docker"
+    else
+      docker_bin="${docker_cmd}"
+    fi
   fi
 
   docker_dir="$(dirname "${docker_bin}")"
@@ -26,6 +35,9 @@ ensure_docker_shell_env() {
   bashrc_snippet="# >>> zoumh docker env >>>"
 
   mkdir -p /etc/profile.d /zoumh/sh
+  if [[ -L /usr/local/bin/docker && ! -e /usr/local/bin/docker ]]; then
+    rm -f /usr/local/bin/docker
+  fi
   ln -sf "${docker_bin}" /usr/local/bin/docker || true
   ln -sf "${docker_bin}" /usr/bin/docker || true
 
