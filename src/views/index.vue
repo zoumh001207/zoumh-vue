@@ -65,9 +65,7 @@ const services = [
   { name: 'Auth', endpoint: '/auth/** -> zoumh-auth' },
   { name: 'System', endpoint: '/system/** -> ruoyi-system' },
   { name: 'Gen', endpoint: '/code/** -> ruoyi-gen' },
-  { name: 'Job', endpoint: '/schedule/** -> ruoyi-job' },
-  { name: 'File', endpoint: '/file/** -> ruoyi-file' },
-  { name: 'Monitor', endpoint: '/monitor/** -> ruoyi-monitor' }
+  { name: 'File', endpoint: '/file/** -> ruoyi-file' }
 ]
 </script>
 
