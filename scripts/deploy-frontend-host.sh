@@ -204,27 +204,5 @@ if [[ -n "${POST_DEPLOY_CMD:-}" ]]; then
   sh -lc "${POST_DEPLOY_CMD}"
 fi
 
-echo "--- ZOU_DOCKER_DIAG_BEGIN ---"
-echo "PATH=${PATH}"
-echo "-- command -v docker --"
-command -v docker || true
-echo "-- type docker --"
-type docker || true
-echo "-- ls docker bins --"
-ls -l /usr/bin/docker /usr/local/bin/docker 2>/dev/null || true
-echo "-- /etc/profile.d/zoumh-docker.sh --"
-sed -n '1,40p' /etc/profile.d/zoumh-docker.sh 2>/dev/null || true
-echo "-- /etc/bashrc tail --"
-tail -n 20 /etc/bashrc 2>/dev/null || true
-echo "-- /root/.bashrc tail --"
-tail -n 20 /root/.bashrc 2>/dev/null || true
-echo "-- /root/.bash_profile tail --"
-tail -n 20 /root/.bash_profile 2>/dev/null || true
-echo "-- /zoumh/sh/docker.sh --"
-sed -n '1,40p' /zoumh/sh/docker.sh 2>/dev/null || true
-echo "-- bash login docker --"
-bash -lc 'command -v docker && docker --version' || true
-echo "--- ZOU_DOCKER_DIAG_END ---"
-
 docker ps --format 'table {{.Names}}\t{{.Status}}' | grep -E "^${NGINX_CONTAINER_NAME}[[:space:]]" || true
 echo "frontend deployed to container ${NGINX_CONTAINER_NAME}"
