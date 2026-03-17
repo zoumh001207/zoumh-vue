@@ -32,9 +32,45 @@ ensure_docker_shell_env() {
   clean_shell_hook() {
     local shell_file="$1"
     [[ -f "${shell_file}" ]] || touch "${shell_file}"
-    sed -i '/# >>> zoumh docker env >>>/,/# <<< zoumh docker env <<</d' "${shell_file}"
-    sed -i '\|/etc/profile.d/zoumh-docker.sh|d' "${shell_file}"
-    sed -i '\|/zoumh/sh/docker.sh|d' "${shell_file}"
+    local temp_file
+    temp_file="$(mktemp)"
+    awk '
+      BEGIN {
+        skip_block = 0
+        skip_legacy_fi = 0
+      }
+      /^# >>> zoumh docker env >>>$/ {
+        skip_block = 1
+        next
+      }
+      /^# <<< zoumh docker env <<</ {
+        skip_block = 0
+        next
+      }
+      skip_block {
+        next
+      }
+      skip_legacy_fi && /^fi$/ {
+        skip_legacy_fi = 0
+        next
+      }
+      /^# zoumh docker env$/ {
+        skip_legacy_fi = 1
+        next
+      }
+      /\/etc\/profile\.d\/zoumh-docker\.sh/ {
+        next
+      }
+      /\/zoumh\/sh\/docker\.sh/ {
+        next
+      }
+      {
+        skip_legacy_fi = 0
+        print
+      }
+    ' "${shell_file}" > "${temp_file}"
+    cat "${temp_file}" > "${shell_file}"
+    rm -f "${temp_file}"
   }
 
   cat > "${env_file}" <<EOF
