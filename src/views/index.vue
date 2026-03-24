@@ -64,7 +64,6 @@ const services = [
   { name: 'Gateway', endpoint: `${import.meta.env.VITE_APP_BASE_API || '/prod-api'} -> gateway` },
   { name: 'Auth', endpoint: '/auth/** -> zoumh-auth' },
   { name: 'System', endpoint: '/system/** -> ruoyi-system' },
-  { name: 'Gen', endpoint: '/code/** -> ruoyi-gen' },
   { name: 'File', endpoint: '/file/** -> ruoyi-file' }
 ]
 </script>
