@@ -20,7 +20,6 @@
                 v-model="loginForm.username"
                 type="text"
                 autocomplete="off"
-                clearable
                 placeholder="账号"
               />
             </div>
@@ -235,6 +234,7 @@ function handleLogin() {
 
 .compact-item {
   margin-bottom: 0;
+  width: 100%;
 }
 
 .field-shell {
@@ -242,6 +242,8 @@ function handleLogin() {
   grid-template-columns: 20px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
   min-height: 56px;
   padding: 0 16px;
   border-radius: 18px;
@@ -260,6 +262,10 @@ function handleLogin() {
 }
 
 :deep(.el-input) {
+  width: 100%;
+}
+
+:deep(.el-form-item__content) {
   width: 100%;
 }
 
