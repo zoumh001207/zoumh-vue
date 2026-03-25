@@ -261,10 +261,10 @@ watch(
   display: grid;
   grid-template-columns: 98px minmax(0, 1fr);
   gap: 22px;
-  max-width: 1380px;
+  width: min(1760px, calc(100vw - 32px));
   min-height: 100vh;
   margin: 0 auto;
-  padding: 28px;
+  padding: 18px 12px;
 }
 
 .rail {
@@ -681,6 +681,7 @@ watch(
 @media (max-width: 860px) {
   .console-frame {
     grid-template-columns: 1fr;
+    width: 100%;
     padding: 16px;
   }
 
