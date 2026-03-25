@@ -285,10 +285,21 @@ function handleLogin() {
 :deep(.el-input__inner) {
   color: #fff;
   font-size: 17px;
+  background: transparent !important;
 }
 
 :deep(.el-input__inner::placeholder) {
   color: rgba(255, 255, 255, 0.34);
+}
+
+:deep(.el-input__inner:-webkit-autofill),
+:deep(.el-input__inner:-webkit-autofill:hover),
+:deep(.el-input__inner:-webkit-autofill:focus),
+:deep(.el-input__inner:-webkit-autofill:active) {
+  -webkit-text-fill-color: #fff;
+  box-shadow: 0 0 0 1000px transparent inset !important;
+  transition: background-color 99999s ease-in-out 0s;
+  caret-color: #fff;
 }
 
 .form-note {

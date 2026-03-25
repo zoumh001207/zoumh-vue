@@ -19,7 +19,13 @@
           <button type="button" class="success-btn" @click="handleSuccessConfirm">去登录</button>
         </div>
 
-        <el-form ref="registerRef" :model="registerForm" :rules="registerRules" class="register-form">
+        <el-form
+          v-if="!successVisible"
+          ref="registerRef"
+          :model="registerForm"
+          :rules="registerRules"
+          class="register-form"
+        >
           <el-form-item prop="username" class="compact-item">
             <div class="field-shell">
               <span class="field-icon">
@@ -415,10 +421,21 @@ getCode()
 :deep(.el-input__inner) {
   color: #fff;
   font-size: 17px;
+  background: transparent !important;
 }
 
 :deep(.el-input__inner::placeholder) {
   color: rgba(255, 255, 255, 0.34);
+}
+
+:deep(.el-input__inner:-webkit-autofill),
+:deep(.el-input__inner:-webkit-autofill:hover),
+:deep(.el-input__inner:-webkit-autofill:focus),
+:deep(.el-input__inner:-webkit-autofill:active) {
+  -webkit-text-fill-color: #fff;
+  box-shadow: 0 0 0 1000px transparent inset !important;
+  transition: background-color 99999s ease-in-out 0s;
+  caret-color: #fff;
 }
 
 .form-note {
