@@ -278,14 +278,17 @@ function handleLogin() {
 :deep(.el-input__wrapper) {
   min-height: auto;
   padding: 0;
-  background: transparent;
-  box-shadow: none;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 :deep(.el-input__inner) {
   color: #fff;
   font-size: 17px;
-  background: transparent !important;
+  background: rgba(20, 22, 29, 0.96) !important;
+  box-shadow: 0 0 0 1000px rgba(20, 22, 29, 0.96) inset !important;
+  -webkit-box-shadow: 0 0 0 1000px rgba(20, 22, 29, 0.96) inset !important;
+  border-radius: 10px;
 }
 
 :deep(.el-input__inner::placeholder) {
@@ -297,7 +300,8 @@ function handleLogin() {
 :deep(.el-input__inner:-webkit-autofill:focus),
 :deep(.el-input__inner:-webkit-autofill:active) {
   -webkit-text-fill-color: #fff;
-  box-shadow: 0 0 0 1000px transparent inset !important;
+  box-shadow: 0 0 0 1000px rgba(20, 22, 29, 0.96) inset !important;
+  -webkit-box-shadow: 0 0 0 1000px rgba(20, 22, 29, 0.96) inset !important;
   transition: background-color 99999s ease-in-out 0s;
   caret-color: #fff;
 }
