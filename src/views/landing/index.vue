@@ -29,43 +29,92 @@
           <article class="hero-card music-card">
             <div class="hero-badges">
               <span class="live-badge">Live</span>
-              <span class="scene-badge">Production</span>
+              <span class="scene-badge">Guest Ready</span>
             </div>
 
             <div class="music-copy">
               <p class="eyebrow">Player Access</p>
               <h1>音乐播放器</h1>
               <p>
-                播放器需要登录后使用，支持搜歌、上一曲、下一曲、收藏和创建歌单。
-                当前先把交互入口和布局放到首页，后面再继续接真实音源和歌单数据。
+                现在不用登录也能直接搜歌、试听和播放。播放时会自动把当前试听音频下载到本地，
+                收藏和歌单先保存在当前浏览器里。
               </p>
             </div>
 
             <div class="player-panel">
-              <div class="cover-disc"></div>
+              <div class="cover-disc" :style="coverDiscStyle"></div>
               <div class="track-meta">
                 <strong>{{ currentTrack.title }}</strong>
                 <span>{{ currentTrack.artist }}</span>
+                <small>{{ currentTrack.album || currentTrack.source }}</small>
               </div>
+
+              <div class="music-search-row">
+                <input
+                  v-model="musicKeyword"
+                  class="music-search-input"
+                  type="text"
+                  placeholder="全网搜索音乐，输入歌名或歌手"
+                  @keyup.enter="searchMusic"
+                />
+                <button type="button" class="music-search-button" @click="searchMusic">
+                  {{ musicLoading ? '搜索中' : '搜歌' }}
+                </button>
+              </div>
+
               <div class="progress-line">
-                <i></i>
+                <i :style="{ width: `${progressPercent}%` }"></i>
               </div>
+
               <div class="playlist-actions">
-                <button type="button" @click="ensureMusicAccess('search')">搜歌</button>
-                <button type="button" @click="ensureMusicAccess('favorite')">收藏</button>
-                <button type="button" @click="ensureMusicAccess('playlist')">创建歌单</button>
+                <button type="button" @click="toggleFavorite">
+                  {{ isFavoriteCurrent ? '取消收藏' : '收藏' }}
+                </button>
+                <button type="button" @click="createPlaylist">创建歌单</button>
+                <button type="button" @click="openPlaylistLibrary">歌单库 {{ playlists.length }}</button>
               </div>
+
               <div class="player-controls">
-                <button type="button" @click="ensureMusicAccess('prev')">◁</button>
-                <button type="button" class="play-btn" @click="ensureMusicAccess('play')">▶</button>
-                <button type="button" @click="ensureMusicAccess('next')">▷</button>
+                <button type="button" @click="playPrevious">◁</button>
+                <button type="button" class="play-btn" @click="togglePlay">
+                  {{ isPlaying ? '❚❚' : '▶' }}
+                </button>
+                <button type="button" @click="playNext">▷</button>
+              </div>
+
+              <div class="search-result-list">
+                <button
+                  v-for="(track, index) in musicResults"
+                  :key="`${track.id}-${index}`"
+                  type="button"
+                  class="track-chip"
+                  :class="{ 'is-active': currentTrack.id === track.id }"
+                  @click="selectTrack(track, index, true)"
+                >
+                  <span class="track-chip-title">{{ track.title }}</span>
+                  <span class="track-chip-meta">{{ track.artist }} · {{ track.source }}</span>
+                </button>
+                <div v-if="!musicResults.length" class="track-chip empty-state">
+                  <span class="track-chip-title">还没有搜索结果</span>
+                  <span class="track-chip-meta">先输入歌名或歌手，播放器会在公开音乐源里帮你找试听。</span>
+                </div>
               </div>
             </div>
 
             <div class="hero-actions">
-              <button type="button" class="primary-action" @click="goPrimary">{{ primaryLabel }}</button>
-              <button type="button" class="secondary-action" @click="ensureMusicAccess('library')">打开歌单库</button>
+              <button type="button" class="primary-action" @click="togglePlay">
+                {{ isPlaying ? '暂停播放' : '立即播放' }}
+              </button>
+              <button type="button" class="secondary-action" @click="goPrimary">{{ primaryLabel }}</button>
             </div>
+
+            <audio
+              ref="audioRef"
+              preload="none"
+              @timeupdate="handleTimeUpdate"
+              @loadedmetadata="handleLoadedMetadata"
+              @ended="handleAudioEnded"
+            ></audio>
           </article>
 
           <article class="panel-card service-card">
@@ -105,7 +154,7 @@
               <div class="game-orb"></div>
               <div class="game-copy">
                 <strong>Game Hub</strong>
-                <p>这里现在只占用空间，后面你要开发游戏模块时，直接在这块继续接正式内容。</p>
+                <p>这里先继续保留占位，后面你要接正式游戏模块时，直接在这块扩展就行。</p>
               </div>
             </div>
           </article>
@@ -119,18 +168,28 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount } from 'vue'
+import { ElMessage } from 'element-plus'
+import { searchPublicMusic, buildMusicAudioUrl } from '@/api/music'
 import { getToken } from '@/utils/auth'
 import ConsoleLoginModal from '@/components/ConsoleLoginModal.vue'
 import ConsoleRegisterModal from '@/components/ConsoleRegisterModal.vue'
 
 const router = useRouter()
 const route = useRoute()
+const audioRef = ref(null)
 const aiKeyword = ref('')
-const currentTrack = reactive({
-  title: 'Neon Console',
-  artist: 'zoumh system mix'
-})
+const musicKeyword = ref('')
+const musicLoading = ref(false)
+const musicResults = ref([])
+const currentIndex = ref(-1)
+const isPlaying = ref(false)
+const currentTime = ref(0)
+const duration = ref(0)
+const favorites = ref(readStorage('landing-music-favorites'))
+const playlists = ref(readStorage('landing-music-playlists'))
+const downloadedTrackIds = ref(readSessionStorage('landing-music-downloaded'))
+const currentTrack = reactive(buildDefaultTrack())
 
 const services = [
   { name: 'Jenkins', desc: '持续集成', href: '/jenkins/', external: true },
@@ -145,6 +204,66 @@ const primaryLabel = computed(() => (getToken() ? '进入后台' : '登录'))
 const profileInitial = computed(() => (getToken() ? 'A' : '→'))
 const loginVisible = ref(false)
 const registerVisible = ref(false)
+const progressPercent = computed(() => {
+  if (!duration.value) {
+    return 0
+  }
+  return Math.min(100, (currentTime.value / duration.value) * 100)
+})
+const coverDiscStyle = computed(() => (
+  currentTrack.artwork
+    ? { backgroundImage: `url(${currentTrack.artwork})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : {}
+))
+const isFavoriteCurrent = computed(() => favorites.value.some(item => item.id === currentTrack.id))
+
+function buildDefaultTrack() {
+  return {
+    id: 0,
+    title: 'Neon Console',
+    artist: '公开试听模式',
+    album: '请输入歌名开始搜索',
+    artwork: '',
+    previewUrl: '',
+    source: 'Apple Music'
+  }
+}
+
+function readStorage(key) {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw ? JSON.parse(raw) : []
+  } catch (error) {
+    return []
+  }
+}
+
+function readSessionStorage(key) {
+  try {
+    const raw = sessionStorage.getItem(key)
+    return raw ? JSON.parse(raw) : []
+  } catch (error) {
+    return []
+  }
+}
+
+function writeStorage(key, value) {
+  localStorage.setItem(key, JSON.stringify(value))
+}
+
+function writeSessionStorage(key, value) {
+  sessionStorage.setItem(key, JSON.stringify(value))
+}
+
+function syncTrack(track) {
+  currentTrack.id = track.id
+  currentTrack.title = track.title
+  currentTrack.artist = track.artist
+  currentTrack.album = track.album
+  currentTrack.artwork = track.artwork
+  currentTrack.previewUrl = track.previewUrl
+  currentTrack.source = track.source
+}
 
 function goPrimary() {
   if (getToken()) {
@@ -152,10 +271,6 @@ function goPrimary() {
     return
   }
   loginVisible.value = true
-}
-
-function openInternal(path) {
-  window.open(path, '_blank')
 }
 
 function openLink(item) {
@@ -166,20 +281,197 @@ function openLink(item) {
   router.push(item.href)
 }
 
-function ensureMusicAccess(action) {
-  if (!getToken()) {
-    loginVisible.value = true
+async function searchMusic() {
+  const keyword = musicKeyword.value.trim() || aiKeyword.value.trim()
+  if (!keyword || musicLoading.value) {
     return
   }
 
-  if (action === 'search' && aiKeyword.value.trim()) {
-    currentTrack.title = aiKeyword.value.trim()
-    currentTrack.artist = 'ai search result'
+  musicLoading.value = true
+  try {
+    const response = await searchPublicMusic(keyword)
+    const tracks = response.data || []
+    musicResults.value = tracks
+    if (!tracks.length) {
+      ElMessage.warning('没有找到可试听的音乐结果')
+      return
+    }
+    selectTrack(tracks[0], 0, false)
+    ElMessage.success(`找到 ${tracks.length} 首可试听歌曲`)
+  } catch (error) {
+    ElMessage.error('音乐搜索暂时不可用')
+  } finally {
+    musicLoading.value = false
   }
 }
 
+function selectTrack(track, index, autoplay) {
+  currentIndex.value = index
+  syncTrack(track)
+  currentTime.value = 0
+  duration.value = 0
+  if (audioRef.value) {
+    audioRef.value.src = buildMusicAudioUrl(track.previewUrl, `${track.artist}-${track.title}`, false)
+    audioRef.value.load()
+  }
+  if (autoplay) {
+    playCurrent()
+  }
+}
+
+async function playCurrent() {
+  if (!currentTrack.previewUrl) {
+    if (musicKeyword.value.trim() || aiKeyword.value.trim()) {
+      await searchMusic()
+    } else {
+      ElMessage.info('先输入歌名或歌手再开始播放')
+    }
+    return
+  }
+
+  if (!audioRef.value) {
+    return
+  }
+
+  try {
+    await audioRef.value.play()
+    isPlaying.value = true
+    triggerDownload(currentTrack)
+  } catch (error) {
+    ElMessage.error('当前歌曲暂时无法播放')
+  }
+}
+
+function pauseCurrent() {
+  if (!audioRef.value) {
+    return
+  }
+  audioRef.value.pause()
+  isPlaying.value = false
+}
+
+function togglePlay() {
+  if (isPlaying.value) {
+    pauseCurrent()
+    return
+  }
+  playCurrent()
+}
+
+function playPrevious() {
+  if (!musicResults.value.length) {
+    ElMessage.info('先搜索歌曲，再使用上一曲')
+    return
+  }
+  const nextIndex = currentIndex.value <= 0 ? musicResults.value.length - 1 : currentIndex.value - 1
+  selectTrack(musicResults.value[nextIndex], nextIndex, true)
+}
+
+function playNext() {
+  if (!musicResults.value.length) {
+    ElMessage.info('先搜索歌曲，再使用下一曲')
+    return
+  }
+  const nextIndex = currentIndex.value >= musicResults.value.length - 1 ? 0 : currentIndex.value + 1
+  selectTrack(musicResults.value[nextIndex], nextIndex, true)
+}
+
+function triggerDownload(track) {
+  if (!track.id || downloadedTrackIds.value.includes(track.id)) {
+    return
+  }
+  downloadedTrackIds.value = [...downloadedTrackIds.value, track.id]
+  writeSessionStorage('landing-music-downloaded', downloadedTrackIds.value)
+
+  const link = document.createElement('a')
+  link.href = buildMusicAudioUrl(track.previewUrl, `${track.artist}-${track.title}`, true)
+  link.target = '_blank'
+  link.rel = 'noreferrer'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+function toggleFavorite() {
+  if (!currentTrack.id) {
+    ElMessage.info('先选择一首歌')
+    return
+  }
+
+  const exists = favorites.value.some(item => item.id === currentTrack.id)
+  favorites.value = exists
+    ? favorites.value.filter(item => item.id !== currentTrack.id)
+    : [...favorites.value, { ...currentTrack }]
+  writeStorage('landing-music-favorites', favorites.value)
+  ElMessage.success(exists ? '已取消收藏' : '已加入收藏')
+}
+
+function createPlaylist() {
+  if (!currentTrack.id) {
+    ElMessage.info('先选中一首歌再建歌单')
+    return
+  }
+
+  const name = window.prompt('输入歌单名称', `我的歌单 ${playlists.value.length + 1}`)
+  if (!name || !name.trim()) {
+    return
+  }
+
+  const cleanName = name.trim()
+  const existing = playlists.value.find(item => item.name === cleanName)
+  if (existing) {
+    if (!existing.tracks.some(item => item.id === currentTrack.id)) {
+      existing.tracks.push({ ...currentTrack })
+    }
+  } else {
+    playlists.value = [...playlists.value, { name: cleanName, tracks: [{ ...currentTrack }] }]
+  }
+
+  writeStorage('landing-music-playlists', playlists.value)
+  ElMessage.success(`已保存到歌单：${cleanName}`)
+}
+
+function openPlaylistLibrary() {
+  if (!playlists.value.length) {
+    ElMessage.info('还没有本地歌单')
+    return
+  }
+  const content = playlists.value.map(item => `${item.name} · ${item.tracks.length} 首`).join(' | ')
+  ElMessage.success(content)
+}
+
 function handleAiSearch() {
-  ensureMusicAccess('search')
+  const keyword = aiKeyword.value.trim()
+  if (!keyword) {
+    return
+  }
+
+  const service = services.find(item => item.name.toLowerCase().includes(keyword.toLowerCase()))
+  if (service) {
+    openLink(service)
+    return
+  }
+
+  musicKeyword.value = keyword
+  searchMusic()
+}
+
+function handleTimeUpdate() {
+  if (!audioRef.value) {
+    return
+  }
+  currentTime.value = audioRef.value.currentTime || 0
+}
+
+function handleLoadedMetadata() {
+  if (!audioRef.value) {
+    return
+  }
+  duration.value = audioRef.value.duration || 0
+}
+
+function handleAudioEnded() {
+  isPlaying.value = false
 }
 
 function handleLoginClose() {
@@ -193,6 +485,12 @@ function handleRegisterClose() {
     router.push('/')
   }
 }
+
+onBeforeUnmount(() => {
+  if (audioRef.value) {
+    audioRef.value.pause()
+  }
+})
 
 watch(
   () => route.path,
@@ -296,7 +594,8 @@ watch(
   outline: none;
 }
 
-.search-box input::placeholder {
+.search-box input::placeholder,
+.music-search-input::placeholder {
   color: rgba(255, 255, 255, 0.34);
 }
 
@@ -318,28 +617,15 @@ watch(
   gap: 10px;
 }
 
-.ghost-chip,
-.profile-chip {
-  border: 0;
-  cursor: pointer;
-}
-
-.ghost-chip {
-  width: 50px;
-  height: 50px;
-  border-radius: 15px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  font-weight: 700;
-}
-
 .profile-chip {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   min-height: 54px;
   padding: 7px 12px 7px 7px;
+  border: 0;
   border-radius: 16px;
+  cursor: pointer;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 107, 28, 0.16));
   color: #fff;
 }
@@ -369,8 +655,7 @@ watch(
 }
 
 .hero-card,
-.panel-card,
-.footer-card {
+.panel-card {
   border-radius: 28px;
   border: 1px solid rgba(255, 255, 255, 0.07);
   background: rgba(10, 11, 15, 0.82);
@@ -483,22 +768,61 @@ watch(
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
 }
 
 .track-meta strong {
   font-size: 18px;
 }
 
-.track-meta span {
+.track-meta span,
+.track-meta small {
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.track-meta small {
+  font-size: 12px;
+}
+
+.music-search-row,
+.progress-line,
+.playlist-actions,
+.player-controls,
+.search-result-list {
+  grid-column: 2;
+}
+
+.music-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 10px;
+}
+
+.music-search-input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(7, 8, 12, 0.56);
+  color: #fff;
+  outline: none;
+}
+
+.music-search-button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ff6b1c, #ff8b45);
+  color: #fff;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.52);
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .progress-line {
-  grid-column: 2;
   height: 6px;
-  margin-top: -8px;
+  margin-top: -4px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
@@ -506,14 +830,13 @@ watch(
 
 .progress-line i {
   display: block;
-  width: 46%;
+  width: 0;
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #ff6b1c, #ff9c56);
 }
 
 .playlist-actions {
-  grid-column: 2;
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
@@ -531,7 +854,6 @@ watch(
 }
 
 .player-controls {
-  grid-column: 2;
   display: flex;
   gap: 12px;
 }
@@ -550,6 +872,49 @@ watch(
   background: linear-gradient(135deg, #ff6b1c, #ff8b45);
 }
 
+.search-result-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  max-height: 176px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.track-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 64px;
+  padding: 12px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.track-chip.is-active {
+  background: linear-gradient(135deg, rgba(255, 107, 28, 0.28), rgba(255, 255, 255, 0.08));
+}
+
+.track-chip-title {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.track-chip-meta {
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  cursor: default;
+}
+
 .hero-actions {
   position: absolute;
   left: 24px;
@@ -561,7 +926,6 @@ watch(
 
 .primary-action,
 .secondary-action,
-.inline-link,
 .service-pill {
   border: 0;
   cursor: pointer;
@@ -698,13 +1062,6 @@ watch(
   line-height: 1.75;
 }
 
-.inline-link {
-  padding: 0;
-  background: transparent;
-  color: #ff8a43;
-  font-weight: 700;
-}
-
 @media (max-width: 1320px) {
   .board {
     grid-template-columns: 1fr 1fr;
@@ -713,7 +1070,7 @@ watch(
 
   .music-card {
     grid-column: 1 / -1;
-    min-height: 480px;
+    min-height: 720px;
   }
 
   .game-card {
@@ -733,7 +1090,8 @@ watch(
   }
 
   .board,
-  .service-grid {
+  .service-grid,
+  .search-result-list {
     grid-template-columns: 1fr;
   }
 
@@ -767,7 +1125,11 @@ watch(
     flex-direction: column;
   }
 
-  .playlist-actions {
+  .music-search-row,
+  .progress-line,
+  .playlist-actions,
+  .player-controls,
+  .search-result-list {
     grid-column: 1 / -1;
   }
 }
