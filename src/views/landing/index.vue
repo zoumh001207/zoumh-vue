@@ -55,9 +55,7 @@ const services = [
   { name: 'Jenkins', desc: '持续集成任务中心', href: '/jenkins/', external: true },
   { name: 'Nacos', desc: '配置中心与注册发现', href: '/nacos/', external: true },
   { name: 'XXL-JOB', desc: '调度任务管理', href: '/xxl-job-admin/', external: true },
-  { name: '禅道', desc: '项目管理入口', href: '/zentao/', external: true },
   { name: 'Seata', desc: '分布式事务控制台', href: '/seata/', external: true },
-  { name: '农场工具', desc: '外部业务应用', href: '/farm/', external: true },
   { name: '音频转换', desc: 'ncm2mp3 服务入口', href: '/ncm2mp3/', external: true }
 ]
 
