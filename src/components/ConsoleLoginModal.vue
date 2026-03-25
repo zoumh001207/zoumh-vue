@@ -178,8 +178,8 @@ function handleLogin() {
 
 .console-modal {
   position: relative;
-  width: min(340px, 100%);
-  padding: 24px 18px 18px;
+  width: min(300px, 100%);
+  padding: 22px 14px 16px;
   border-radius: 28px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -189,15 +189,15 @@ function handleLogin() {
 }
 
 .login-form {
-  max-width: 272px;
+  max-width: 236px;
 }
 
 .close-btn {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 34px;
-  height: 34px;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
   border: 0;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.08);
@@ -208,35 +208,35 @@ function handleLogin() {
 }
 
 .modal-head {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .head-tag {
   margin: 0 0 10px;
   color: rgba(255, 255, 255, 0.48);
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.24em;
 }
 
 .modal-head h2 {
   margin: 0;
   color: #fff;
-  font-size: 28px;
+  font-size: 24px;
 }
 
 .modal-head p {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   color: rgba(255, 255, 255, 0.62);
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 :deep(.el-input__wrapper) {
-  min-height: 36px;
-  border-radius: 12px;
+  min-height: 34px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.05);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-  padding: 0 10px;
+  padding: 0 8px;
 }
 
 :deep(.el-input__inner) {
@@ -254,10 +254,10 @@ function handleLogin() {
 .form-note {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  margin: 2px 0 14px;
+  gap: 8px;
+  margin: 2px 0 12px;
   color: rgba(255, 255, 255, 0.52);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .action-link {
@@ -267,9 +267,9 @@ function handleLogin() {
 
 .submit-btn {
   width: 100%;
-  min-height: 38px;
+  min-height: 34px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 10px;
   background: linear-gradient(135deg, #ff6b1c, #ff8b45);
   box-shadow: 0 18px 34px rgba(255, 107, 28, 0.22);
 }
@@ -290,7 +290,7 @@ function handleLogin() {
   }
 
   .console-modal {
-    padding: 20px 16px 16px;
+    padding: 20px 14px 14px;
   }
 
   .form-note {
