@@ -1,6 +1,7 @@
 import router from './router'
 import { ElMessage } from 'element-plus'
 import { getToken } from '@/utils/auth'
+import { removeToken } from '@/utils/auth'
 import { isHttp } from '@/utils/validate'
 import useUserStore from '@/store/modules/user'
 import usePermissionStore from '@/store/modules/permission'
@@ -35,7 +36,11 @@ router.beforeEach(async (to, from, next) => {
       })
       next({ ...to, replace: true })
     } catch (error) {
-      await userStore.resetToken()
+      if (typeof userStore.resetToken === 'function') {
+        await userStore.resetToken()
+      } else {
+        removeToken()
+      }
       ElMessage.error(error?.message || '登录状态失效，请重新登录')
       next(`/login?redirect=${to.path}`)
     }

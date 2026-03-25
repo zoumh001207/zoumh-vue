@@ -150,10 +150,16 @@ function handleLogin() {
         }
         return acc
       }, {})
+      await router.push({ path: redirect.value || '/index', query: otherQueryParams })
+
+      if (router.currentRoute.value.path === '/login') {
+        throw new Error('登录后未能进入后台，请稍后重试')
+      }
+
       emit('success')
       emit('update:modelValue', false)
-      router.push({ path: redirect.value || '/index', query: otherQueryParams })
     } catch (error) {
+      ElMessage.error(error?.message || '登录失败，请重试')
       console.error('登录失败:', error)
     } finally {
       loading.value = false
