@@ -141,14 +141,18 @@
         </section>
       </main>
     </section>
+
+    <ConsoleLoginModal v-model="loginVisible" @close="handleLoginClose" />
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { getToken } from '@/utils/auth'
+import ConsoleLoginModal from '@/components/ConsoleLoginModal.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 const services = [
   { name: 'Jenkins', desc: '持续集成', href: '/jenkins/', external: true },
@@ -168,9 +172,14 @@ const quickNav = [
 
 const primaryLabel = computed(() => (getToken() ? '进入后台' : '直接登录'))
 const profileInitial = computed(() => (getToken() ? 'A' : '→'))
+const loginVisible = ref(false)
 
 function goPrimary() {
-  router.push(getToken() ? '/index' : '/login')
+  if (getToken()) {
+    router.push('/index')
+    return
+  }
+  loginVisible.value = true
 }
 
 function openInternal(path) {
@@ -184,6 +193,20 @@ function openLink(item) {
   }
   router.push(item.href)
 }
+
+function handleLoginClose() {
+  if (route.path === '/login') {
+    router.push('/')
+  }
+}
+
+watch(
+  () => route.path,
+  (path) => {
+    loginVisible.value = path === '/login'
+  },
+  { immediate: true }
+)
 </script>
 
 <style lang="scss" scoped>
