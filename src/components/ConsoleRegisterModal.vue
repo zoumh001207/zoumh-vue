@@ -10,6 +10,15 @@
           <p>先完成基础注册，再返回登录进入后台。</p>
         </header>
 
+        <div v-if="successVisible" class="success-panel">
+          <div class="success-badge">✓</div>
+          <div class="success-copy">
+            <p class="success-title">注册成功</p>
+            <p>账号 {{ successUsername }} 已创建，现在可以直接登录。</p>
+          </div>
+          <button type="button" class="success-btn" @click="handleSuccessConfirm">去登录</button>
+        </div>
+
         <el-form ref="registerRef" :model="registerForm" :rules="registerRules" class="register-form">
           <el-form-item prop="username" class="compact-item">
             <div class="field-shell">
@@ -92,7 +101,7 @@
 </template>
 
 <script setup>
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { getCodeImg, register } from '@/api/login'
 
 defineProps({
@@ -113,6 +122,8 @@ const registerRef = ref(null)
 const loading = ref(false)
 const captchaEnabled = ref(false)
 const codeUrl = ref('')
+const successVisible = ref(false)
+const successUsername = ref('')
 
 const registerForm = ref({
   username: '',
@@ -171,24 +182,8 @@ function handleRegister() {
       uuid: registerForm.value.uuid
     })
       .then(() => {
-        ElMessageBox.alert(
-          `<span>账号 <strong>${registerForm.value.username}</strong> 注册成功，现在可以直接登录。</span>`,
-          '注册成功',
-          {
-            dangerouslyUseHTMLString: true,
-            type: 'success'
-          }
-        ).then(() => {
-          emit('success')
-          emit('update:modelValue', false)
-          router.push({
-            path: '/login',
-            query: {
-              username: registerForm.value.username,
-              registered: '1'
-            }
-          })
-        })
+        successUsername.value = registerForm.value.username
+        successVisible.value = true
       })
       .catch((error) => {
         ElMessage.error(error?.message || '注册失败')
@@ -199,6 +194,19 @@ function handleRegister() {
       .finally(() => {
         loading.value = false
       })
+  })
+}
+
+function handleSuccessConfirm() {
+  emit('success')
+  emit('update:modelValue', false)
+  successVisible.value = false
+  router.push({
+    path: '/login',
+    query: {
+      username: successUsername.value,
+      registered: '1'
+    }
   })
 }
 
@@ -293,6 +301,56 @@ getCode()
 .register-form {
   display: grid;
   gap: 14px;
+}
+
+.success-panel {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.success-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #59c96d, #92db55);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.success-title {
+  margin: 0 0 4px;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.success-copy p:last-child {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.success-btn {
+  min-width: 92px;
+  min-height: 42px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ff6b1c, #ff8b45);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .compact-item {
@@ -432,6 +490,10 @@ getCode()
   .form-note {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .success-panel {
+    grid-template-columns: 1fr;
   }
 }
 </style>
