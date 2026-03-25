@@ -1,45 +1,45 @@
 <template>
   <transition name="console-fade">
     <div v-if="modelValue" class="console-modal-mask" @click.self="handleClose">
-      <div class="console-modal">
+      <section class="console-modal">
         <button v-if="closable" type="button" class="close-btn" @click="handleClose">×</button>
 
-        <div class="modal-head">
+        <header class="modal-head">
           <p class="head-tag">CONTROL ACCESS</p>
           <h2>登录后台</h2>
           <p>{{ helperText }}</p>
-        </div>
+        </header>
 
         <el-form ref="loginRef" :model="loginForm" :rules="loginRules" class="login-form">
-          <el-form-item prop="username">
-            <el-input
-              v-model="loginForm.username"
-              type="text"
-              size="large"
-              autocomplete="off"
-              clearable
-              placeholder="账号"
-            >
-              <template #prefix>
-                <svg-icon icon-class="user" class="el-input__icon input-icon" />
-              </template>
-            </el-input>
+          <el-form-item prop="username" class="compact-item">
+            <div class="field-shell">
+              <span class="field-icon">
+                <svg-icon icon-class="user" class="input-icon" />
+              </span>
+              <el-input
+                v-model="loginForm.username"
+                type="text"
+                autocomplete="off"
+                clearable
+                placeholder="账号"
+              />
+            </div>
           </el-form-item>
 
-          <el-form-item prop="password">
-            <el-input
-              v-model="loginForm.password"
-              type="password"
-              size="large"
-              autocomplete="off"
-              placeholder="密码"
-              show-password
-              @keyup.enter="handleLogin"
-            >
-              <template #prefix>
-                <svg-icon icon-class="password" class="el-input__icon input-icon" />
-              </template>
-            </el-input>
+          <el-form-item prop="password" class="compact-item">
+            <div class="field-shell">
+              <span class="field-icon">
+                <svg-icon icon-class="password" class="input-icon" />
+              </span>
+              <el-input
+                v-model="loginForm.password"
+                type="password"
+                autocomplete="off"
+                placeholder="密码"
+                show-password
+                @keyup.enter="handleLogin"
+              />
+            </div>
           </el-form-item>
 
           <div class="form-note">
@@ -47,14 +47,14 @@
             <router-link class="action-link" to="/register">去注册</router-link>
           </div>
 
-          <el-form-item>
-            <el-button :loading="loading" size="large" type="primary" class="submit-btn" @click="handleLogin">
+          <el-form-item class="submit-row">
+            <el-button :loading="loading" type="primary" class="submit-btn" @click="handleLogin">
               <span v-if="!loading">进入后台</span>
               <span v-else>登录中...</span>
             </el-button>
           </el-form-item>
         </el-form>
-      </div>
+      </section>
     </div>
   </transition>
 </template>
@@ -64,7 +64,7 @@ import { computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import useUserStore from '@/store/modules/user'
 
-const props = defineProps({
+defineProps({
   modelValue: {
     type: Boolean,
     default: false
@@ -172,101 +172,121 @@ function handleLogin() {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(5, 6, 9, 0.58);
-  backdrop-filter: blur(18px);
+  background: rgba(6, 7, 11, 0.6);
+  backdrop-filter: blur(20px);
 }
 
 .console-modal {
   position: relative;
-  width: min(430px, 100%);
-  padding: 14px 28px 10px;
+  width: min(420px, 100%);
+  padding: 24px 28px 22px;
   border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   background:
-    radial-gradient(circle at top right, rgba(255, 107, 28, 0.16), transparent 26%),
-    linear-gradient(180deg, rgba(18, 19, 24, 0.96), rgba(8, 9, 12, 0.98));
-  box-shadow: 0 32px 100px rgba(0, 0, 0, 0.4);
-}
-
-.login-form {
-  max-width: 100%;
+    radial-gradient(circle at top right, rgba(255, 107, 28, 0.14), transparent 24%),
+    linear-gradient(180deg, rgba(20, 22, 29, 0.98), rgba(10, 11, 15, 0.99));
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
 }
 
 .close-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
+  top: 16px;
+  right: 16px;
+  width: 38px;
+  height: 38px;
   border: 0;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.84);
-  font-size: 24px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 26px;
   line-height: 1;
   cursor: pointer;
 }
 
 .modal-head {
-  margin-bottom: 2px;
+  margin-bottom: 18px;
 }
 
 .head-tag {
-  margin: 0 0 6px;
-  color: rgba(255, 255, 255, 0.48);
-  font-size: 9px;
-  letter-spacing: 0.24em;
+  margin: 0 0 10px;
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 11px;
+  letter-spacing: 0.26em;
 }
 
 .modal-head h2 {
   margin: 0;
   color: #fff;
-  font-size: 22px;
+  font-size: 38px;
+  line-height: 1;
 }
 
 .modal-head p {
-  margin: 2px 0 0;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 11px;
-  line-height: 1.25;
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 15px;
+  line-height: 1.6;
 }
 
-:deep(.el-form-item) {
-  margin-bottom: 6px;
+.login-form {
+  display: grid;
+  gap: 14px;
 }
 
-:deep(.el-input__wrapper) {
-  min-height: 16px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-  padding: 0 12px;
+.compact-item {
+  margin-bottom: 0;
 }
 
-:deep(.el-input__inner) {
-  font-size: 13px;
-  line-height: 1.1;
+.field-shell {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
-:deep(.el-input__inner) {
-  color: #fff;
-}
-
-:deep(.el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.36);
+.field-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .input-icon {
   color: #ff8a43;
 }
 
+:deep(.el-input) {
+  width: 100%;
+}
+
+:deep(.el-input__wrapper) {
+  min-height: auto;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:deep(.el-input__inner) {
+  color: #fff;
+  font-size: 17px;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.34);
+}
+
 .form-note {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  margin: -4px 0 4px;
-  color: rgba(255, 255, 255, 0.52);
-  font-size: 11px;
+  gap: 10px;
+  margin-top: -2px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
 }
 
 .action-link {
@@ -274,13 +294,17 @@ function handleLogin() {
   text-decoration: none;
 }
 
+.submit-row {
+  margin-bottom: 0;
+}
+
 .submit-btn {
   width: 100%;
-  min-height: 20px;
+  min-height: 54px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 18px;
   background: linear-gradient(135deg, #ff6b1c, #ff8b45);
-  box-shadow: 0 18px 34px rgba(255, 107, 28, 0.22);
+  box-shadow: 0 18px 36px rgba(255, 107, 28, 0.24);
 }
 
 .console-fade-enter-active,
@@ -299,12 +323,25 @@ function handleLogin() {
   }
 
   .console-modal {
-    width: min(360px, 100%);
-    padding: 12px 20px 8px;
+    padding: 22px 18px 18px;
+  }
+
+  .modal-head h2 {
+    font-size: 32px;
+  }
+
+  .field-shell {
+    min-height: 50px;
+    padding: 0 14px;
+  }
+
+  .submit-btn {
+    min-height: 48px;
   }
 
   .form-note {
     flex-direction: column;
+    align-items: flex-start;
   }
 }
 </style>
