@@ -4,33 +4,18 @@
     <div class="ambient ambient-right"></div>
 
     <section class="console-frame">
-      <aside class="rail">
-        <div class="rail-title">
-          <p>Zoumh</p>
-        </div>
-
-        <div class="rail-icons">
-          <button
-            v-for="nav in quickNav"
-            :key="nav.name"
-            class="rail-btn"
-            type="button"
-            :title="nav.name"
-            @click="openLink(nav)"
-          >
-            <span>{{ nav.icon }}</span>
-          </button>
-        </div>
-      </aside>
-
       <main class="stage">
         <header class="topbar">
           <div class="search-box">
             <span class="search-icon">⌕</span>
-            <span>搜索服务、入口、控制台</span>
+            <input
+              v-model="aiKeyword"
+              type="text"
+              placeholder="ai搜索音乐、项目组件、控制台入口"
+              @keyup.enter="handleAiSearch"
+            />
+            <button type="button" class="search-submit" @click="handleAiSearch">ai搜索</button>
           </div>
-
-          <div class="ai-search">ai搜索</div>
 
           <div class="top-actions">
             <button type="button" class="ghost-chip" @click="openInternal('/jenkins/')">CI</button>
@@ -51,33 +36,38 @@
             </div>
 
             <div class="music-copy">
-              <p class="eyebrow">Now Playing</p>
-              <h1>午夜控制台</h1>
+              <p class="eyebrow">Player Access</p>
+              <h1>音乐播放器</h1>
               <p>
-                把首页改成播放器式主视觉，右上角继续保留登录和后台入口。
-                当前核心服务在线，文件链路已经恢复。
+                播放器需要登录后使用，支持搜歌、上一曲、下一曲、收藏和创建歌单。
+                当前先把交互入口和布局放到首页，后面再继续接真实音源和歌单数据。
               </p>
             </div>
 
             <div class="player-panel">
               <div class="cover-disc"></div>
               <div class="track-meta">
-                <strong>Neon Console</strong>
-                <span>zoumh system mix</span>
+                <strong>{{ currentTrack.title }}</strong>
+                <span>{{ currentTrack.artist }}</span>
               </div>
               <div class="progress-line">
                 <i></i>
               </div>
+              <div class="playlist-actions">
+                <button type="button" @click="ensureMusicAccess('search')">搜歌</button>
+                <button type="button" @click="ensureMusicAccess('favorite')">收藏</button>
+                <button type="button" @click="ensureMusicAccess('playlist')">创建歌单</button>
+              </div>
               <div class="player-controls">
-                <button type="button">◁</button>
-                <button type="button" class="play-btn">▶</button>
-                <button type="button">▷</button>
+                <button type="button" @click="ensureMusicAccess('prev')">◁</button>
+                <button type="button" class="play-btn" @click="ensureMusicAccess('play')">▶</button>
+                <button type="button" @click="ensureMusicAccess('next')">▷</button>
               </div>
             </div>
 
             <div class="hero-actions">
               <button type="button" class="primary-action" @click="goPrimary">{{ primaryLabel }}</button>
-              <button type="button" class="secondary-action" @click="openInternal('/minio/')">查看文件中心</button>
+              <button type="button" class="secondary-action" @click="ensureMusicAccess('library')">打开歌单库</button>
             </div>
           </article>
 
@@ -108,28 +98,18 @@
           <article class="panel-card game-card">
             <div class="card-head">
               <div>
-                <p class="card-kicker">Storage</p>
+                <p class="card-kicker">Module Placeholder</p>
                 <h3>游戏模块</h3>
               </div>
-              <span class="metric-badge">MinIO</span>
+              <span class="metric-badge">Later</span>
             </div>
 
             <div class="game-stage">
               <div class="game-orb"></div>
               <div class="game-copy">
                 <strong>Game Hub</strong>
-                <p>这里先作为游戏模块位，后面可以继续接你要展示的项目或独立应用。</p>
+                <p>这里现在只占用空间，后面你要开发游戏模块时，直接在这块继续接正式内容。</p>
               </div>
-            </div>
-
-            <button type="button" class="inline-link" @click="openInternal('/minio/')">进入对象存储</button>
-          </article>
-
-          <article class="footer-card">
-            <p class="card-kicker">Record</p>
-            <div class="footer-content">
-              <strong>备案信息</strong>
-              <span>这里预留备案号、版权说明和底部固定信息，后面你给正式内容我再替换。</span>
             </div>
           </article>
         </section>
@@ -149,6 +129,11 @@ import ConsoleRegisterModal from '@/components/ConsoleRegisterModal.vue'
 
 const router = useRouter()
 const route = useRoute()
+const aiKeyword = ref('')
+const currentTrack = reactive({
+  title: 'Neon Console',
+  artist: 'zoumh system mix'
+})
 
 const services = [
   { name: 'Jenkins', desc: '持续集成', href: '/jenkins/', external: true },
@@ -157,13 +142,6 @@ const services = [
   { name: 'Seata', desc: '事务控制', href: '/seata/', external: true },
   { name: 'MinIO', desc: '文件对象', href: '/minio/', external: true },
   { name: 'ncm2mp3', desc: '音频转换', href: '/ncm2mp3/', external: true }
-]
-
-const quickNav = [
-  { name: '首页', icon: '⌂', href: '/', external: false },
-  { name: '构建', icon: '⌘', href: '/jenkins/', external: true },
-  { name: '文件', icon: '◈', href: '/minio/', external: true },
-  { name: '后台', icon: '◎', href: '/login', external: false }
 ]
 
 const primaryLabel = computed(() => (getToken() ? '进入后台' : '登录'))
@@ -189,6 +167,22 @@ function openLink(item) {
     return
   }
   router.push(item.href)
+}
+
+function ensureMusicAccess(action) {
+  if (!getToken()) {
+    loginVisible.value = true
+    return
+  }
+
+  if (action === 'search' && aiKeyword.value.trim()) {
+    currentTrack.title = aiKeyword.value.trim()
+    currentTrack.artist = 'ai search result'
+  }
+}
+
+function handleAiSearch() {
+  ensureMusicAccess('search')
 }
 
 function handleLoginClose() {
@@ -252,55 +246,11 @@ watch(
 .console-frame {
   position: relative;
   z-index: 1;
-  display: grid;
-  grid-template-columns: 108px minmax(0, 1fr);
-  gap: 18px;
+  display: block;
   width: min(1840px, calc(100vw - 20px));
   min-height: 100vh;
   margin: 0 auto;
   padding: 12px 10px;
-}
-
-.rail {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 18px 14px;
-  border-radius: 30px;
-  background: rgba(10, 11, 15, 0.76);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(18px);
-}
-
-.rail-title {
-  min-height: 56px;
-  color: rgba(111, 147, 255, 0.56);
-  font-size: 18px;
-  font-weight: 700;
-  text-align: center;
-}
-
-.rail-title p {
-  margin: 0;
-}
-
-.rail-icons {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: auto;
-}
-
-.rail-btn {
-  width: 100%;
-  height: 64px;
-  border: 0;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 21px;
-  cursor: pointer;
 }
 
 .stage {
@@ -310,10 +260,9 @@ watch(
 }
 
 .topbar {
-  display: grid;
-  grid-template-columns: 390px minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
   min-height: 98px;
   padding: 0 16px;
   border-radius: 30px;
@@ -326,8 +275,9 @@ watch(
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1;
   min-height: 52px;
-  padding: 0 18px;
+  padding: 0 10px 0 18px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.46);
@@ -337,12 +287,31 @@ watch(
   font-size: 20px;
 }
 
-.ai-search {
-  color: #ff402d;
+.search-box input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
   font-size: 28px;
+  font-weight: 600;
+  outline: none;
+}
+
+.search-box input::placeholder {
+  color: rgba(255, 255, 255, 0.34);
+}
+
+.search-submit {
+  min-width: 132px;
+  height: 52px;
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #ff6b1c, #ff8b45);
+  color: #fff;
+  font-size: 18px;
   font-weight: 700;
-  text-align: center;
-  letter-spacing: 0.04em;
+  cursor: pointer;
 }
 
 .top-actions {
@@ -541,6 +510,23 @@ watch(
   background: linear-gradient(90deg, #ff6b1c, #ff9c56);
 }
 
+.playlist-actions {
+  grid-column: 2;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.playlist-actions button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+}
+
 .player-controls {
   grid-column: 2;
   display: flex;
@@ -712,39 +698,12 @@ watch(
   font-weight: 700;
 }
 
-.footer-card {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 120px;
-  padding: 0 28px;
-}
-
-.footer-content {
-  display: flex;
-  align-items: center;
-  gap: 22px;
-}
-
-.footer-content strong {
-  font-size: 48px;
-  font-weight: 700;
-  color: #ff4331;
-}
-
-.footer-content span {
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 15px;
-}
-
 @media (max-width: 1320px) {
   .board {
     grid-template-columns: 1fr 1fr;
   }
 
-  .music-card,
-  .footer-card {
+  .music-card {
     grid-column: 1 / -1;
   }
 
@@ -755,25 +714,12 @@ watch(
 
 @media (max-width: 920px) {
   .console-frame {
-    grid-template-columns: 1fr;
     width: 100%;
     padding: 12px;
   }
 
-  .rail {
-    flex-direction: row;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .rail-icons {
-    flex-direction: row;
-    flex-wrap: wrap;
-    margin-top: 0;
-  }
-
   .topbar {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     padding: 16px;
   }
 
@@ -782,9 +728,22 @@ watch(
     grid-template-columns: 1fr;
   }
 
-  .music-card,
-  .footer-card {
+  .music-card {
     grid-column: auto;
+  }
+
+  .search-box {
+    width: 100%;
+    flex-wrap: wrap;
+    padding: 14px;
+  }
+
+  .search-box input {
+    font-size: 20px;
+  }
+
+  .search-submit {
+    width: 100%;
   }
 
   .player-panel {
@@ -798,14 +757,8 @@ watch(
     flex-direction: column;
   }
 
-  .footer-card,
-  .footer-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .footer-content strong {
-    font-size: 34px;
+  .playlist-actions {
+    grid-column: 1 / -1;
   }
 }
 </style>
