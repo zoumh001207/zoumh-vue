@@ -170,7 +170,7 @@ const quickNav = [
   { name: '后台', icon: '◎', href: '/login', external: false }
 ]
 
-const primaryLabel = computed(() => (getToken() ? '进入后台' : '直接登录'))
+const primaryLabel = computed(() => (getToken() ? '进入后台' : '登录'))
 const profileInitial = computed(() => (getToken() ? 'A' : '→'))
 const loginVisible = ref(false)
 

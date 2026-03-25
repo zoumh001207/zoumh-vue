@@ -188,6 +188,10 @@ function handleLogin() {
   box-shadow: 0 32px 100px rgba(0, 0, 0, 0.4);
 }
 
+.login-form {
+  max-width: 370px;
+}
+
 .close-btn {
   position: absolute;
   top: 16px;
@@ -227,10 +231,11 @@ function handleLogin() {
 }
 
 :deep(.el-input__wrapper) {
-  min-height: 52px;
+  min-height: 44px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.05);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+  padding: 0 14px;
 }
 
 :deep(.el-input__inner) {
@@ -261,7 +266,7 @@ function handleLogin() {
 
 .submit-btn {
   width: 100%;
-  min-height: 52px;
+  min-height: 46px;
   border: 0;
   border-radius: 16px;
   background: linear-gradient(135deg, #ff6b1c, #ff8b45);
