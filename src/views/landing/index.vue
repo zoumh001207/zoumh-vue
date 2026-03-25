@@ -143,6 +143,7 @@
     </section>
 
     <ConsoleLoginModal v-model="loginVisible" @close="handleLoginClose" />
+    <ConsoleRegisterModal v-model="registerVisible" @close="handleRegisterClose" />
   </div>
 </template>
 
@@ -150,6 +151,7 @@
 import { computed } from 'vue'
 import { getToken } from '@/utils/auth'
 import ConsoleLoginModal from '@/components/ConsoleLoginModal.vue'
+import ConsoleRegisterModal from '@/components/ConsoleRegisterModal.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -173,6 +175,7 @@ const quickNav = [
 const primaryLabel = computed(() => (getToken() ? '进入后台' : '登录'))
 const profileInitial = computed(() => (getToken() ? 'A' : '→'))
 const loginVisible = ref(false)
+const registerVisible = ref(false)
 
 function goPrimary() {
   if (getToken()) {
@@ -200,10 +203,17 @@ function handleLoginClose() {
   }
 }
 
+function handleRegisterClose() {
+  if (route.path === '/register') {
+    router.push('/')
+  }
+}
+
 watch(
   () => route.path,
   (path) => {
     loginVisible.value = path === '/login'
+    registerVisible.value = path === '/register'
   },
   { immediate: true }
 )

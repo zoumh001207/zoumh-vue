@@ -27,7 +27,7 @@ export const constantRoutes = [
   },
   {
     path: '/register',
-    component: () => import('@/views/register/index.vue'),
+    component: () => import('@/views/landing/index.vue'),
     hidden: true
   },
   {
