@@ -247,25 +247,25 @@ watch(
   position: relative;
   z-index: 1;
   display: block;
-  width: min(1840px, calc(100vw - 20px));
+  width: min(1820px, calc(100vw - 28px));
   min-height: 100vh;
   margin: 0 auto;
-  padding: 12px 10px;
+  padding: 16px 14px 22px;
 }
 
 .stage {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .topbar {
   display: flex;
   align-items: center;
   gap: 16px;
-  min-height: 98px;
-  padding: 0 16px;
-  border-radius: 30px;
+  min-height: 86px;
+  padding: 0 14px;
+  border-radius: 26px;
   background: rgba(10, 11, 15, 0.76);
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 20px 54px rgba(0, 0, 0, 0.28);
@@ -276,9 +276,9 @@ watch(
   align-items: center;
   gap: 10px;
   flex: 1;
-  min-height: 52px;
-  padding: 0 10px 0 18px;
-  border-radius: 18px;
+  min-height: 48px;
+  padding: 0 8px 0 16px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.46);
 }
@@ -293,7 +293,7 @@ watch(
   border: 0;
   background: transparent;
   color: #fff;
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 600;
   outline: none;
 }
@@ -303,13 +303,13 @@ watch(
 }
 
 .search-submit {
-  min-width: 132px;
-  height: 52px;
+  min-width: 118px;
+  height: 48px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 14px;
   background: linear-gradient(135deg, #ff6b1c, #ff8b45);
   color: #fff;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -327,9 +327,9 @@ watch(
 }
 
 .ghost-chip {
-  width: 54px;
-  height: 54px;
-  border-radius: 16px;
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
   font-weight: 700;
@@ -339,9 +339,9 @@ watch(
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-height: 58px;
-  padding: 8px 14px 8px 8px;
-  border-radius: 18px;
+  min-height: 54px;
+  padding: 7px 12px 7px 7px;
+  border-radius: 16px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 107, 28, 0.16));
   color: #fff;
 }
@@ -350,8 +350,8 @@ watch(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: linear-gradient(135deg, #ff6b1c, #ff9448);
   font-weight: 700;
@@ -364,8 +364,8 @@ watch(
 
 .board {
   display: grid;
-  grid-template-columns: 1.4fr 0.9fr 0.9fr;
-  gap: 18px;
+  grid-template-columns: 1.22fr 0.82fr 0.78fr;
+  gap: 16px;
 }
 
 .hero-card,
@@ -379,8 +379,8 @@ watch(
 
 .music-card {
   position: relative;
-  min-height: 560px;
-  padding: 28px;
+  min-height: 500px;
+  padding: 24px;
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(18, 20, 28, 0.26), rgba(8, 9, 12, 0.9)),
@@ -398,7 +398,7 @@ watch(
 }
 
 .hero-badges {
-  margin-bottom: 42px;
+  margin-bottom: 30px;
 }
 
 .live-badge,
@@ -444,34 +444,34 @@ watch(
 }
 
 .music-copy h1 {
-  font-size: clamp(48px, 5vw, 72px);
+  font-size: clamp(38px, 4.2vw, 60px);
   line-height: 1.02;
 }
 
 .music-copy p:last-child {
-  margin: 20px 0 0;
+  margin: 16px 0 0;
   color: rgba(255, 255, 255, 0.68);
-  font-size: 16px;
-  line-height: 1.9;
+  font-size: 15px;
+  line-height: 1.75;
 }
 
 .player-panel {
   position: absolute;
-  left: 28px;
-  right: 28px;
-  bottom: 112px;
+  left: 24px;
+  right: 24px;
+  bottom: 98px;
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
-  gap: 18px;
-  padding: 18px 20px;
-  border-radius: 24px;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 22px;
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(14px);
 }
 
 .cover-disc {
-  width: 92px;
-  height: 92px;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   background:
     radial-gradient(circle at center, #1d1f26 0 18px, #08090c 19px 28px, #2e313d 29px 34px, #0d0f15 35px 100%);
@@ -486,10 +486,11 @@ watch(
 }
 
 .track-meta strong {
-  font-size: 24px;
+  font-size: 18px;
 }
 
 .track-meta span {
+  font-size: 13px;
   color: rgba(255, 255, 255, 0.52);
 }
 
@@ -518,12 +519,13 @@ watch(
 }
 
 .playlist-actions button {
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 36px;
+  padding: 0 12px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -534,10 +536,10 @@ watch(
 }
 
 .player-controls button {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
   cursor: pointer;
@@ -549,9 +551,9 @@ watch(
 
 .hero-actions {
   position: absolute;
-  left: 28px;
-  right: 28px;
-  bottom: 28px;
+  left: 24px;
+  right: 24px;
+  bottom: 24px;
   display: flex;
   gap: 12px;
 }
@@ -566,10 +568,10 @@ watch(
 
 .primary-action,
 .secondary-action {
-  min-height: 52px;
-  padding: 0 22px;
-  border-radius: 16px;
-  font-size: 15px;
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 14px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -584,14 +586,14 @@ watch(
 }
 
 .panel-card {
-  padding: 18px;
+  padding: 16px;
 }
 
 .service-card {
-  min-height: 560px;
+  min-height: 500px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 
 .status-dot {
@@ -604,7 +606,7 @@ watch(
 }
 
 .metric-value {
-  font-size: 72px;
+  font-size: 64px;
   font-weight: 700;
   line-height: 1;
 }
@@ -617,7 +619,7 @@ watch(
 .service-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
   margin-top: auto;
 }
 
@@ -626,25 +628,26 @@ watch(
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  min-height: 98px;
-  padding: 18px;
-  border-radius: 20px;
+  min-height: 90px;
+  padding: 16px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.04);
   color: #fff;
   text-align: left;
 }
 
 .service-pill span {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
 }
 
 .service-pill small {
+  font-size: 12px;
   color: rgba(255, 255, 255, 0.5);
 }
 
 .game-card {
-  min-height: 560px;
+  min-height: 500px;
   display: flex;
   flex-direction: column;
   background:
@@ -662,8 +665,8 @@ watch(
 }
 
 .game-orb {
-  width: 180px;
-  height: 180px;
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
   background:
     radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.36), transparent 18%),
@@ -675,20 +678,21 @@ watch(
 }
 
 .game-copy {
-  max-width: 320px;
+  max-width: 280px;
   text-align: center;
 }
 
 .game-copy strong {
   display: block;
   margin-bottom: 12px;
-  font-size: 42px;
+  font-size: 34px;
 }
 
 .game-copy p {
   margin: 0;
   color: rgba(255, 255, 255, 0.6);
-  line-height: 1.8;
+  font-size: 14px;
+  line-height: 1.75;
 }
 
 .inline-link {
