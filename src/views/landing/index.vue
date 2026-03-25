@@ -18,9 +18,6 @@
           </div>
 
           <div class="top-actions">
-            <button type="button" class="ghost-chip" @click="openInternal('/jenkins/')">CI</button>
-            <button type="button" class="ghost-chip" @click="openInternal('/nacos/')">NC</button>
-            <button type="button" class="ghost-chip" @click="openInternal('/minio/')">MO</button>
             <button type="button" class="profile-chip" @click="goPrimary">
               <span class="profile-avatar">{{ profileInitial }}</span>
               <span class="profile-label">{{ primaryLabel }}</span>
@@ -256,6 +253,7 @@ watch(
 .stage {
   display: flex;
   flex-direction: column;
+  min-height: calc(100vh - 38px);
   gap: 16px;
 }
 
@@ -317,7 +315,7 @@ watch(
 .top-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .ghost-chip,
@@ -363,9 +361,11 @@ watch(
 }
 
 .board {
+  flex: 1;
   display: grid;
   grid-template-columns: 1.22fr 0.82fr 0.78fr;
   gap: 16px;
+  min-height: 0;
 }
 
 .hero-card,
@@ -379,7 +379,8 @@ watch(
 
 .music-card {
   position: relative;
-  min-height: 500px;
+  min-height: 0;
+  height: 100%;
   padding: 24px;
   overflow: hidden;
   background:
@@ -590,7 +591,8 @@ watch(
 }
 
 .service-card {
-  min-height: 500px;
+  min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -647,7 +649,8 @@ watch(
 }
 
 .game-card {
-  min-height: 500px;
+  min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   background:
@@ -705,10 +708,12 @@ watch(
 @media (max-width: 1320px) {
   .board {
     grid-template-columns: 1fr 1fr;
+    min-height: auto;
   }
 
   .music-card {
     grid-column: 1 / -1;
+    min-height: 480px;
   }
 
   .game-card {
@@ -734,6 +739,7 @@ watch(
 
   .music-card {
     grid-column: auto;
+    min-height: 0;
   }
 
   .search-box {
