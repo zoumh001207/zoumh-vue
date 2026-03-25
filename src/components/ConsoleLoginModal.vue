@@ -178,8 +178,8 @@ function handleLogin() {
 
 .console-modal {
   position: relative;
-  width: min(260px, 100%);
-  padding: 18px 10px 12px;
+  width: min(340px, 100%);
+  padding: 18px 20px 14px;
   border-radius: 28px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
@@ -189,7 +189,7 @@ function handleLogin() {
 }
 
 .login-form {
-  max-width: 198px;
+  max-width: 100%;
 }
 
 .close-btn {
@@ -208,7 +208,7 @@ function handleLogin() {
 }
 
 .modal-head {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .head-tag {
@@ -221,22 +221,26 @@ function handleLogin() {
 .modal-head h2 {
   margin: 0;
   color: #fff;
-  font-size: 21px;
+  font-size: 24px;
 }
 
 .modal-head p {
   margin: 6px 0 0;
   color: rgba(255, 255, 255, 0.62);
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.45;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 10px;
 }
 
 :deep(.el-input__wrapper) {
-  min-height: 30px;
+  min-height: 26px;
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.05);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-  padding: 0 6px;
+  padding: 0 10px;
 }
 
 :deep(.el-input__inner) {
@@ -255,7 +259,7 @@ function handleLogin() {
   display: flex;
   justify-content: space-between;
   gap: 6px;
-  margin: 0 0 10px;
+  margin: -2px 0 8px;
   color: rgba(255, 255, 255, 0.52);
   font-size: 11px;
 }
@@ -267,7 +271,7 @@ function handleLogin() {
 
 .submit-btn {
   width: 100%;
-  min-height: 30px;
+  min-height: 28px;
   border: 0;
   border-radius: 9px;
   background: linear-gradient(135deg, #ff6b1c, #ff8b45);
@@ -290,7 +294,8 @@ function handleLogin() {
   }
 
   .console-modal {
-    padding: 18px 10px 12px;
+    width: min(320px, 100%);
+    padding: 16px 16px 12px;
   }
 
   .form-note {
