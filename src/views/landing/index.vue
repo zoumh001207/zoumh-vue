@@ -105,7 +105,7 @@
               <button type="button" class="primary-action" @click="togglePlay">
                 {{ isPlaying ? '暂停播放' : '立即播放' }}
               </button>
-              <button type="button" class="secondary-action" @click="goPrimary">{{ primaryLabel }}</button>
+              <button type="button" class="secondary-action" @click="openCloudDrive">打开 CloudDrive</button>
             </div>
 
             <audio
@@ -192,6 +192,7 @@ const downloadedTrackIds = ref(readSessionStorage('landing-music-downloaded'))
 const currentTrack = reactive(buildDefaultTrack())
 
 const services = [
+  { name: 'CloudDrive', desc: '网盘管理', href: '/clouddrive/', external: true },
   { name: 'Jenkins', desc: '持续集成', href: '/jenkins/', external: true },
   { name: 'Nacos', desc: '注册配置', href: '/nacos/', external: true },
   { name: 'XXL-JOB', desc: '任务调度', href: '/xxl-job-admin/', external: true },
@@ -279,6 +280,10 @@ function openLink(item) {
     return
   }
   router.push(item.href)
+}
+
+function openCloudDrive() {
+  window.open('/clouddrive/', '_blank')
 }
 
 async function searchMusic() {
