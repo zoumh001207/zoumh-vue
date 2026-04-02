@@ -22,12 +22,12 @@ export const constantRoutes = [
   },
   {
     path: '/login',
-    component: () => import('@/views/landing/index.vue'),
+    component: () => import('@/views/login/index.vue'),
     hidden: true
   },
   {
     path: '/register',
-    component: () => import('@/views/landing/index.vue'),
+    component: () => import('@/views/register/index.vue'),
     hidden: true
   },
   {
