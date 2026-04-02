@@ -53,6 +53,19 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/social',
+    component: Layout,
+    redirect: '/social/profile',
+    children: [
+      {
+        path: 'profile',
+        component: () => import('@/views/social/profile/index.vue'),
+        name: 'SocialProfile',
+        meta: { title: '资料中心', icon: 'peoples' }
+      }
+    ]
+  },
+  {
     path: '/user',
     component: Layout,
     hidden: true,

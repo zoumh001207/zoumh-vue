@@ -1,19 +1,26 @@
-﻿<template>
-  <div class="app-container home-dashboard">
+<template>
+  <div class="app-container social-console">
     <section class="hero">
-      <div>
-        <h1>Zoumh 后台管理</h1>
-        <p>统一管理配置中心、任务调度、权限体系与业务工具，支持本地联调与服务器部署。</p>
+      <div class="hero-copy">
+        <p class="eyebrow">Social Console</p>
+        <h1>{{ overview.productName }}</h1>
+        <p class="hero-text">
+          当前后台已经切到社交交友项目视角，后续会围绕资料审核、推荐策略、举报风控、
+          小程序拉新和安卓主端持续扩展。
+        </p>
       </div>
-      <el-tag type="success" effect="dark">运行中</el-tag>
+      <div class="hero-side">
+        <span class="phase-badge">{{ overview.phase }}</span>
+        <span class="env-chip">{{ envMode }}</span>
+      </div>
     </section>
 
-    <el-row :gutter="16" class="kpi-row">
-      <el-col :xs="24" :sm="12" :lg="6" v-for="item in kpis" :key="item.title">
-        <el-card shadow="hover" class="kpi-card">
-          <div class="kpi-title">{{ item.title }}</div>
-          <div class="kpi-value">{{ item.value }}</div>
-          <div class="kpi-desc">{{ item.desc }}</div>
+    <el-row :gutter="16">
+      <el-col v-for="item in overview.metrics" :key="item.title" :xs="24" :sm="12" :lg="6">
+        <el-card shadow="hover" class="metric-card">
+          <div class="metric-title">{{ item.title }}</div>
+          <div class="metric-value">{{ item.value }}</div>
+          <div class="metric-desc">{{ item.description }}</div>
         </el-card>
       </el-col>
     </el-row>
@@ -22,54 +29,95 @@
       <el-col :xs="24" :lg="14">
         <el-card class="panel" shadow="never">
           <template #header>
-            <div class="panel-title">核心服务</div>
+            <div class="panel-title">运营模块优先级</div>
           </template>
-          <el-table :data="services" stripe>
-            <el-table-column prop="name" label="服务" min-width="140" />
-            <el-table-column prop="endpoint" label="访问地址" min-width="260" />
-            <el-table-column label="状态" width="100">
-              <template #default>
-                <el-tag type="success" size="small">UP</el-tag>
-              </template>
-            </el-table-column>
-          </el-table>
+          <div class="module-list">
+            <div v-for="module in overview.modules" :key="module.name" class="module-item">
+              <div>
+                <strong>{{ module.name }}</strong>
+                <p>{{ module.description }}</p>
+              </div>
+              <div class="module-meta">
+                <el-tag effect="plain">{{ module.owner }}</el-tag>
+                <el-tag type="warning">{{ module.status }}</el-tag>
+              </div>
+            </div>
+          </div>
         </el-card>
       </el-col>
 
       <el-col :xs="24" :lg="10">
         <el-card class="panel" shadow="never">
           <template #header>
-            <div class="panel-title">近期任务</div>
+            <div class="panel-title">项目路线</div>
           </template>
           <el-timeline>
-            <el-timeline-item timestamp="今日" type="primary">检查网关与认证服务状态</el-timeline-item>
-            <el-timeline-item timestamp="本周" type="success">同步 Nacos 配置并做回归验证</el-timeline-item>
-            <el-timeline-item timestamp="本月" type="warning">清理无效菜单与历史调试配置</el-timeline-item>
+            <el-timeline-item
+              v-for="item in overview.roadmap"
+              :key="item.stage"
+              :timestamp="item.stage"
+              :type="item.status === '进行中' ? 'primary' : 'success'"
+            >
+              {{ item.goal }}
+            </el-timeline-item>
           </el-timeline>
         </el-card>
       </el-col>
     </el-row>
+
+    <el-card class="panel todo-panel" shadow="never">
+      <template #header>
+        <div class="panel-title">接下来直接做的事</div>
+      </template>
+      <div class="todo-list">
+        <div v-for="item in overview.todoItems" :key="item" class="todo-item">
+          {{ item }}
+        </div>
+      </div>
+    </el-card>
   </div>
 </template>
 
 <script setup>
-const kpis = [
-  { title: '系统版本', value: 'v3.6.7', desc: '当前前端构建版本' },
-  { title: '环境', value: import.meta.env.MODE, desc: '当前运行模式' },
-  { title: '基础接口', value: import.meta.env.VITE_APP_BASE_API || '/dev-api', desc: '前端 API 前缀' },
-  { title: '品牌', value: 'Zoumh', desc: '统一后台管理门户' }
-]
+import { onMounted, reactive } from 'vue'
+import { getSocialAdminOverview } from '@/api/social'
 
-const services = [
-  { name: 'Gateway', endpoint: `${import.meta.env.VITE_APP_BASE_API || '/prod-api'} -> gateway` },
-  { name: 'Auth', endpoint: '/auth/** -> zoumh-auth' },
-  { name: 'System', endpoint: '/system/** -> ruoyi-system' },
-  { name: 'File', endpoint: '/file/** -> ruoyi-file' }
-]
+const overview = reactive({
+  productName: 'Zoumh Social',
+  phase: 'MVP 骨架阶段',
+  metrics: [
+    { title: '当前定位', value: '社交交友', description: '项目方向已切换' },
+    { title: '管理端', value: '已接管', description: '后台先作为社交运营中台' },
+    { title: '小程序', value: '待建设', description: '承接拉新和分享传播' },
+    { title: '安卓 App', value: '待建设', description: '承接主业务使用链路' }
+  ],
+  modules: [],
+  roadmap: [],
+  todoItems: []
+})
+
+const envMode = import.meta.env.MODE
+
+onMounted(async () => {
+  try {
+    const response = await getSocialAdminOverview()
+    Object.assign(overview, response.data || {})
+  } catch (error) {
+    overview.modules = [
+      { name: '用户资料中心', owner: '后端 + 审核后台', status: '优先级 P0', description: '管理头像、昵称、标签和审核状态' },
+      { name: '推荐与匹配', owner: '推荐策略', status: '优先级 P0', description: '搭建喜欢、跳过、双向匹配能力' }
+    ]
+    overview.roadmap = [
+      { stage: '骨架搭建', goal: '完成首页和后台换壳', status: '进行中' },
+      { stage: '业务建模', goal: '补齐资料、推荐、举报模型', status: '待启动' }
+    ]
+    overview.todoItems = ['先完成接口骨架，再补菜单和 SQL 初始化']
+  }
+})
 </script>
 
 <style lang="scss" scoped>
-.home-dashboard {
+.social-console {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -78,53 +126,128 @@ const services = [
 .hero {
   display: flex;
   justify-content: space-between;
+  gap: 24px;
+  padding: 28px;
+  border-radius: 20px;
+  color: #fff;
+  background:
+    radial-gradient(circle at top left, rgba(255, 209, 187, 0.24), transparent 26%),
+    linear-gradient(135deg, #9d3d2f 0%, #672e39 42%, #22283d 100%);
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.hero-copy h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.hero-text {
+  max-width: 720px;
+  margin: 14px 0 0;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.hero-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.phase-badge,
+.env-chip {
+  display: inline-flex;
   align-items: center;
-  padding: 20px;
-  border-radius: 14px;
-  background: linear-gradient(120deg, rgba(15, 106, 216, 0.12), rgba(244, 183, 61, 0.12));
-  border: 1px solid rgba(15, 106, 216, 0.18);
-
-  h1 {
-    margin: 0;
-    font-size: 26px;
-    color: #12345a;
-  }
-
-  p {
-    margin: 8px 0 0;
-    color: #486486;
-  }
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
 }
 
-.kpi-card {
-  border-radius: 12px;
-
-  .kpi-title {
-    color: #637a99;
-    font-size: 13px;
-  }
-
-  .kpi-value {
-    margin-top: 8px;
-    font-size: 26px;
-    font-weight: 700;
-    color: #12345a;
-    text-transform: uppercase;
-  }
-
-  .kpi-desc {
-    margin-top: 4px;
-    color: #7f94b1;
-    font-size: 12px;
-  }
-}
-
+.metric-card,
 .panel {
-  border-radius: 12px;
+  border-radius: 18px;
+}
+
+.metric-title {
+  color: #7f6771;
+  font-size: 13px;
+}
+
+.metric-value {
+  margin-top: 8px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #4f2332;
+}
+
+.metric-desc {
+  margin-top: 6px;
+  color: #7e7980;
+  line-height: 1.6;
+}
+
+.panel-row {
+  margin-top: 2px;
 }
 
 .panel-title {
+  font-size: 16px;
   font-weight: 700;
-  color: #12345a;
+  color: #4f2332;
+}
+
+.module-list,
+.todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.module-item,
+.todo-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #faf6f7;
+}
+
+.module-item p {
+  margin: 8px 0 0;
+  color: #7b6d74;
+  line-height: 1.7;
+}
+
+.module-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.todo-item {
+  font-weight: 600;
+  color: #5a3742;
+}
+
+@media (max-width: 960px) {
+  .hero,
+  .module-item {
+    flex-direction: column;
+  }
+
+  .hero-side {
+    align-items: flex-start;
+  }
 }
 </style>
