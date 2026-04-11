@@ -268,7 +268,7 @@ function goPrimary() {
     router.push('/index')
     return
   }
-  loginVisible.value = true
+  router.push('/login')
 }
 
 function openLink(item) {
