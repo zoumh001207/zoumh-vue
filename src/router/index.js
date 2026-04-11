@@ -43,7 +43,6 @@ export const constantRoutes = [
   {
     path: '/index',
     component: Layout,
-    hidden: true,
     children: [
       {
         path: '',

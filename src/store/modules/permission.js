@@ -6,6 +6,32 @@ import InnerLink from '@/layout/components/InnerLink'
 
 const modules = import.meta.glob('../../views/**/*.vue')
 
+function buildSidebarRoutes(routes) {
+  const seen = new Set()
+  const result = []
+
+  for (const route of constantRoutes.concat(routes)) {
+    if (!route || route.hidden) {
+      continue
+    }
+
+    const key = [
+      String(route.path || ''),
+      String(route.name || ''),
+      String(route.meta?.title || '')
+    ].join('|')
+
+    if (seen.has(key)) {
+      continue
+    }
+
+    seen.add(key)
+    result.push(route)
+  }
+
+  return result
+}
+
 function shouldRemoveRoute(route) {
   const path = String(route?.path || '').toLowerCase()
   const name = String(route?.name || '').toLowerCase()
@@ -90,7 +116,7 @@ export const usePermissionStore = defineStore('permission', {
       this.topbarRouters = routes
     },
     setSidebarRouters(routes) {
-      this.sidebarRouters = constantRoutes.concat(routes)
+      this.sidebarRouters = buildSidebarRoutes(routes)
     },
     async generateRoutes() {
       const routerResponse = await getRouters()
