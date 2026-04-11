@@ -1,4 +1,4 @@
-﻿import { createWebHistory, createRouter } from 'vue-router'
+import { createWebHistory, createRouter } from 'vue-router'
 /* Layout */
 import Layout from '@/layout'
 
@@ -53,19 +53,6 @@ export const constantRoutes = [
     ]
   },
   {
-    path: '/social',
-    component: Layout,
-    redirect: '/social/profile',
-    children: [
-      {
-        path: 'profile',
-        component: () => import('@/views/social/profile/index.vue'),
-        name: 'SocialProfile',
-        meta: { title: '资料中心', icon: 'peoples' }
-      }
-    ]
-  },
-  {
     path: '/user',
     component: Layout,
     hidden: true,
@@ -75,6 +62,18 @@ export const constantRoutes = [
         path: 'profile/:activeTab?',
         component: () => import('@/views/system/user/profile/index'),
         name: 'Profile',
+        meta: { title: '个人中心', icon: 'user' }
+      }
+    ]
+  },
+  {
+    path: '/account',
+    component: Layout,
+    children: [
+      {
+        path: 'profile',
+        component: () => import('@/views/system/user/profile/index'),
+        name: 'AccountProfile',
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
@@ -125,6 +124,20 @@ export const dynamicRoutes = [
       }
     ]
   },
+  {
+    path: '/monitor/job-log',
+    component: Layout,
+    hidden: true,
+    permissions: ['monitor:job:list'],
+    children: [
+      {
+        path: 'index/:jobId(\\d+)',
+        component: () => import('@/views/monitor/job/log'),
+        name: 'JobLog',
+        meta: { title: '调度日志', activeMenu: '/monitor/job' }
+      }
+    ]
+  }
 ]
 
 const router = createRouter({
