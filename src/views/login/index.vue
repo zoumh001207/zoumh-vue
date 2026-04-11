@@ -99,7 +99,9 @@ const services = [
   { name: 'Nacos', desc: '配置与注册中心', href: '/nacos/' },
   { name: 'Jenkins', desc: '持续集成', href: '/jenkins/' },
   { name: 'XXL-JOB', desc: '任务调度中心', href: '/xxl-job-admin/' },
-  { name: 'Seata', desc: '事务控制台', href: '/seata/' }
+  { name: '禅道', desc: '项目管理', href: '/zentao/' },
+  { name: 'Seata', desc: '事务控制台', href: '/seata/' },
+  { name: '农场工具', desc: '外部业务入口', href: '/farm/' }
 ]
 
 const loginForm = ref({

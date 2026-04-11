@@ -1,45 +1,37 @@
 <template>
-  <div class="portal-shell">
-    <div class="mesh">
-      <div class="orb orb1"></div>
-      <div class="orb orb2"></div>
-      <div class="orb orb3"></div>
-    </div>
-
-    <section class="portal">
-      <header class="hero">
-        <div>
-          <p class="eyebrow">ZOU MH SERVICE HUB</p>
-          <h1>基础服务门户</h1>
-          <p class="summary">
-            公共服务入口保留在首页，后台管理通过统一登录进入。
-            首页只做服务导航，不再伪造登录成功提示。
-          </p>
-        </div>
-
-        <div class="hero-actions">
-          <el-button type="primary" size="large" class="login-btn" @click="goPrimary">
+  <div class="landing-shell">
+    <section class="hero-card">
+      <div class="hero-copy">
+        <p class="eyebrow">ZOU MH</p>
+        <h1>专属主页已经就位，后台入口保持单点直达。</h1>
+        <p class="summary">
+          这里作为站点首页展示你的个人品牌和项目入口。
+          访客先看到主页，登录后直接进入业务后台，不再落到默认管理页。
+        </p>
+        <div class="action-row">
+          <el-button type="primary" size="large" class="primary-action" @click="goPrimary">
             {{ primaryLabel }}
           </el-button>
-          <el-button plain size="large" class="register-btn" @click="router.push('/register')">
+          <el-button plain size="large" class="secondary-action" @click="router.push('/register')">
             创建账号
           </el-button>
         </div>
-      </header>
+      </div>
 
-      <section class="cards">
-        <a
-          v-for="service in services"
-          :key="service.name"
-          class="card"
-          :href="service.href"
-          :target="service.external ? '_blank' : '_self'"
-          rel="noreferrer"
-        >
-          <span class="card-name">{{ service.name }}</span>
-          <span class="card-desc">{{ service.desc }}</span>
-        </a>
-      </section>
+      <div class="hero-panel">
+        <div class="stat-card">
+          <span>站点角色</span>
+          <strong>个人专属门户</strong>
+        </div>
+        <div class="stat-card">
+          <span>登录流向</span>
+          <strong>登录成功后进入后台工作台</strong>
+        </div>
+        <div class="stat-card accent">
+          <span>接口入口</span>
+          <strong>`/prod-api/` 统一转发到网关</strong>
+        </div>
+      </div>
     </section>
   </div>
 </template>
@@ -50,18 +42,7 @@ import { getToken } from '@/utils/auth'
 
 const router = useRouter()
 
-const services = [
-  { name: '后台登录', desc: '进入业务后台管理', href: '/login', external: false },
-  { name: 'Jenkins', desc: '持续集成任务中心', href: '/jenkins/', external: true },
-  { name: 'Nacos', desc: '配置中心与注册发现', href: '/nacos/', external: true },
-  { name: 'XXL-JOB', desc: '调度任务管理', href: '/xxl-job-admin/', external: true },
-  { name: '禅道', desc: '项目管理入口', href: '/zentao/', external: true },
-  { name: 'Seata', desc: '分布式事务控制台', href: '/seata/', external: true },
-  { name: '农场工具', desc: '外部业务应用', href: '/farm/', external: true },
-  { name: '音频转换', desc: 'ncm2mp3 服务入口', href: '/ncm2mp3/', external: true }
-]
-
-const primaryLabel = computed(() => (getToken() ? '进入后台' : '登录后台'))
+const primaryLabel = computed(() => (getToken() ? '进入后台' : '前往登录'))
 
 function goPrimary() {
   router.push(getToken() ? '/index' : '/login')
@@ -69,185 +50,140 @@ function goPrimary() {
 </script>
 
 <style lang="scss" scoped>
-.portal-shell {
-  position: relative;
+.landing-shell {
   min-height: 100vh;
-  overflow: hidden;
-  background: #f4f4ff;
+  padding: clamp(24px, 4vw, 48px);
+  background:
+    radial-gradient(circle at top left, rgba(255, 226, 160, 0.55), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(37, 110, 94, 0.22), transparent 30%),
+    linear-gradient(135deg, #f5f0e8 0%, #dae6dd 42%, #f7f2eb 100%);
 }
 
-.mesh {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
+.hero-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 420px);
+  gap: 28px;
+  min-height: calc(100vh - clamp(48px, 8vw, 96px));
+  padding: clamp(28px, 5vw, 56px);
+  border-radius: 36px;
+  background: rgba(255, 252, 248, 0.82);
+  box-shadow: 0 30px 120px rgba(44, 49, 40, 0.12);
+  backdrop-filter: blur(18px);
 }
 
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  animation: drift 18s ease-in-out infinite;
-}
-
-.orb1 {
-  top: -180px;
-  left: -110px;
-  width: 620px;
-  height: 620px;
-  background: radial-gradient(circle, rgba(108, 99, 255, 0.18), transparent 70%);
-}
-
-.orb2 {
-  right: -140px;
-  top: 24%;
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.12), transparent 70%);
-  animation-delay: -6s;
-}
-
-.orb3 {
-  bottom: -130px;
-  left: 35%;
-  width: 420px;
-  height: 420px;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.12), transparent 70%);
-  animation-delay: -11s;
-}
-
-.portal {
-  position: relative;
-  z-index: 1;
-  padding: 36px clamp(20px, 5vw, 60px) 44px;
-}
-
-.hero {
+.hero-copy {
   display: flex;
-  justify-content: space-between;
-  gap: 24px;
-  align-items: end;
-  margin-bottom: 30px;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 760px;
 }
 
 .eyebrow {
-  margin: 0 0 12px;
-  color: #6c63ff;
-  font-size: 12px;
-  letter-spacing: 0.24em;
+  margin: 0 0 18px;
+  color: #8a4b2a;
+  font-size: 13px;
+  letter-spacing: 0.32em;
 }
 
-.hero h1 {
+.hero-copy h1 {
   margin: 0;
-  color: #12122a;
-  font-size: clamp(40px, 5vw, 72px);
+  color: #1d2822;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(42px, 6vw, 82px);
   line-height: 1.02;
 }
 
 .summary {
-  max-width: 760px;
-  margin: 18px 0 0;
-  color: #5555a0;
-  font-size: 17px;
-  line-height: 1.85;
+  max-width: 620px;
+  margin: 22px 0 0;
+  color: rgba(29, 40, 34, 0.78);
+  font-size: 18px;
+  line-height: 1.9;
 }
 
-.hero-actions {
+.action-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
+  margin-top: 30px;
 }
 
-.login-btn,
-.register-btn {
-  min-width: 140px;
-  min-height: 48px;
-  border-radius: 14px;
+.primary-action,
+.secondary-action {
+  min-width: 150px;
+  min-height: 50px;
+  border-radius: 999px;
 }
 
-.login-btn {
+.primary-action {
   border: none;
-  background: linear-gradient(135deg, #6c63ff, #a855f7);
-  box-shadow: 0 14px 28px rgba(108, 99, 255, 0.22);
+  background: linear-gradient(135deg, #1f5f4d 0%, #10392e 100%);
+  box-shadow: 0 16px 30px rgba(16, 57, 46, 0.22);
 }
 
-.cards {
+.secondary-action {
+  border-color: rgba(31, 95, 77, 0.22);
+  color: #1f5f4d;
+}
+
+.hero-panel {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
+  align-content: center;
+  gap: 16px;
 }
 
-.card {
-  display: block;
-  min-height: 140px;
-  padding: 20px;
+.stat-card {
+  padding: 24px;
   border-radius: 24px;
-  border: 1px solid rgba(108, 99, 255, 0.12);
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 18px 36px rgba(52, 46, 108, 0.1);
-  color: inherit;
-  text-decoration: none;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  background: #fffdf9;
+  border: 1px solid rgba(31, 40, 34, 0.08);
 }
 
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 24px 40px rgba(52, 46, 108, 0.14);
-  border-color: rgba(108, 99, 255, 0.28);
-}
-
-.card-name {
+.stat-card span {
   display: block;
-  color: #12122a;
+  margin-bottom: 10px;
+  color: rgba(29, 40, 34, 0.58);
+  font-size: 13px;
+}
+
+.stat-card strong {
+  color: #1d2822;
   font-size: 22px;
-  font-weight: 700;
+  line-height: 1.45;
 }
 
-.card-desc {
-  display: block;
-  margin-top: 12px;
-  color: #6666aa;
-  font-size: 14px;
-  line-height: 1.75;
+.stat-card.accent {
+  background: linear-gradient(135deg, #b96c42 0%, #8d4e2d 100%);
 }
 
-@keyframes drift {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-
-  33% {
-    transform: translate(36px, -52px) scale(1.06);
-  }
-
-  66% {
-    transform: translate(-28px, 36px) scale(0.95);
-  }
+.stat-card.accent span,
+.stat-card.accent strong {
+  color: #fff7f1;
 }
 
-@media (max-width: 1080px) {
-  .cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .hero {
-    flex-direction: column;
-    align-items: start;
+@media (max-width: 960px) {
+  .hero-card {
+    grid-template-columns: 1fr;
+    min-height: auto;
   }
 }
 
 @media (max-width: 640px) {
-  .portal {
-    padding: 18px;
+  .landing-shell {
+    padding: 16px;
   }
 
-  .cards {
-    grid-template-columns: 1fr;
+  .hero-card {
+    padding: 22px;
+    border-radius: 26px;
   }
 
-  .hero-actions {
-    width: 100%;
+  .summary {
+    font-size: 16px;
+  }
+
+  .action-row {
+    flex-direction: column;
   }
 }
 </style>
